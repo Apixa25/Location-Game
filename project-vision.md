@@ -217,24 +217,58 @@ I'm learning as we go, and I'm trusting you to be my safety net. **Don't just tr
 
 ---
 
-## 🏗️ Key Technical Considerations
+## 🏗️ Confirmed Tech Stack
 
-### AR Implementation
+### 📱 Mobile App Layer
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Framework** | React Native | Cross-platform iOS + Android |
+| **AR Library** | ViroReact | Camera viewfinder + 3D coin overlays |
+| **Language** | TypeScript | Type safety, better DX |
+| **GPS/Location** | react-native-geolocation-service | Coin placement & discovery |
+| **Permissions** | react-native-permissions | Camera & location access |
+| **State Management** | Zustand (or Redux) | App state |
+
+### 🖥️ Backend Layer (TBD)
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **API** | Node.js + Express | REST/GraphQL endpoints |
+| **Database** | PostgreSQL | Users, coins, transactions |
+| **Cloud** | AWS or GCP | Hosting, scaling |
+| **Bitcoin** | TBD | Real-value coin integration |
+
+### 🎮 Why React Native + ViroReact?
+- ✅ Single codebase for iOS + Android
+- ✅ JavaScript/TypeScript (familiar, large ecosystem)
+- ✅ ViroReact actively maintained (ReactVision/Morrow, 2025)
+- ✅ Supports 3D models (.gltf/.obj) with animations
+- ✅ ARKit (iOS) + ARCore (Android) support
+- ✅ Good enough for our "Prize Finder" spinning coins
+- ✅ Can pivot to Unity later if we need more advanced AR
+
+---
+
+## 🔧 Key Technical Considerations
+
+### AR Implementation ("Prize Finder")
 - Camera-based viewfinder showing virtual coins in real-world space
+- ViroARScene for camera background
+- Viro3DObject for spinning coin models
+- ViroAnimations for spin/glow effects
 - GPS for location tracking and coin placement
-- Smooth, responsive AR rendering for good UX
 
 ### Financial System
 - Bitcoin integration for real-value coins
 - Secure wallet management
-- Subscription payment processing
+- Subscription payment processing ($10/month minimum)
+- Gas system (daily consumption)
 - Transaction history and audit trails
 
 ### Location System
 - **Configurable radiuses** (initial defaults, can be adjusted):
   - ~¼ mile radius for system-placed coins (walkable for kids)
   - ~10 mile radius for user-hidden coins
-- Accurate GPS positioning
+- Accurate GPS positioning (ACCESS_FINE_LOCATION)
 - Geofencing for coin discovery
 - Kid-friendly design: walkable distances so players don't need to drive
 

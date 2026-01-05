@@ -68,20 +68,29 @@ android/.gradle/
 android/app/build/
 android/build/
 android/local.properties
+android/.idea/
+android/captures/
 ios/Pods/
 ios/build/
 ios/*.xcworkspace
 !ios/*.xcworkspace/contents.xcworkspacedata
+ios/Podfile.lock
 
-# Flutter
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
-.pub-cache/
-.pub/
-flutter_*.png
-*.iml
+# Metro bundler
+.metro-health-check*
+metro-cache/
+
+# Expo (if we use it with ViroReact)
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Buck (React Native build tool)
+buck-out/
+\.buckd/
+*.keystore
+!debug.keystore
 
 # Secrets and credentials (CRITICAL - real money involved!)
 *.pem
