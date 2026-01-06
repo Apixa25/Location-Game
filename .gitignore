@@ -23,6 +23,7 @@ out/
 # IDE and editor files
 .idea/
 .vscode/
+.claude/
 *.swp
 *.swo
 *.sublime-workspace
