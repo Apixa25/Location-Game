@@ -37,6 +37,30 @@ Everything about how coins look, behave, and get collected in Black Bart's Gold.
 
 ---
 
+## 🎯 Two Coin Type Visuals
+
+Coins MUST look visually distinct based on their type:
+
+### Fixed Value Coins
+- Value is known and displayed
+- Creates races - players compete for known prizes
+- **Visual style**: [TBD - perhaps solid/stable appearance]
+- Shows denomination clearly
+
+### Pool/Slot Machine Coins (Mystery)
+- Value unknown until collected
+- Could pay big or small
+- **Visual style**: [TBD - perhaps shimmering/mysterious glow]
+- Shows "?" or mystery indicator instead of value
+
+### Why Visual Distinction Matters
+- Players can choose their strategy
+- Fixed coins = guaranteed race for known value
+- Slot coins = gamble for potential big win
+- Adds depth to gameplay decisions
+
+---
+
 ## 🌈 Gold/Silver/Bronze System
 
 When **multi-find is enabled**, the first 3 players to find a coin get different rewards:
@@ -205,7 +229,9 @@ Each coin stores:
 ```
 {
   id: unique identifier
-  value: amount in BBG
+  coin_type: "fixed" or "pool"           // NEW: distinguishes the two types
+  value: amount in BBG or null           // null for pool coins (determined at collection)
+  contribution: amount hider put in      // for pool coins, tracks what was contributed
   location: GPS coordinates
   hider: user ID or "system" or sponsor ID
   hidden_at: timestamp
@@ -217,6 +243,10 @@ Each coin stores:
   current_tier: gold, silver, bronze, or null
 }
 ```
+
+### Key Difference
+- **Fixed coins**: `value` is set, `contribution` equals `value`
+- **Pool coins**: `value` is null until collected, `contribution` tracks hider's input
 
 ---
 

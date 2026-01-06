@@ -4,11 +4,103 @@ The algorithm that ensures coins are always available where players are active.
 
 ---
 
-## 💡 Core Concept
+## 💡 Core Concept: Two Coin Types
 
-Coins are NOT placed with fixed values. **System coins get their value assigned at the moment of collection** based on the finder's history.
+There are **two fundamentally different ways to hide coins**:
 
-This is DIFFERENT from user-hidden or sponsor-hidden coins which have fixed values.
+### 🎯 Type 1: Fixed Value Coins
+- Value set at hiding time
+- Finder gets exact amount
+- Creates urgency and races
+- Must be >$1 to raise finding limits
+- **Who can use**: System, Users, Sponsors
+
+### 🎰 Type 2: Pool Contribution Coins (Slot Machine)
+- Hider contributes X amount to company pool
+- Value determined at collection time
+- Finder can get MORE or LESS than contribution
+- Like real slots - house sometimes loses individual spins
+- **Who can use**: System, Users, Sponsors
+
+---
+
+## 🎰 Slot Machine Economics
+
+### How It Works
+```
+User contributes $10 to pool (slot machine coin)
+     ↓
+$10 goes to company prize pool
+     ↓
+Finder collects coin
+     ↓
+Algorithm determines payout: Could be $2... or $50!
+```
+
+### Why Company Can Afford Big Payouts
+- Gas fees drain ALL accounts constantly
+- 10% guaranteed profit margin on all deposits
+- Individual big wins are offset by many small payouts
+- Just like a casino: house always wins long-term
+
+### Payout Factors
+1. Finder's recent history (last 10 coins)
+2. Finder's lifetime stats
+3. Pool balance / company margin
+4. Randomness for excitement
+
+### Example Scenarios
+```
+Finder A: Last 3 finds = $10, $8, $5 (hot streak)
+  → Finds slot coin → Gets 50¢ (cool down)
+
+Finder B: Last 5 finds = 25¢, 10¢, 50¢, 10¢, 25¢ (cold)
+  → Finds SAME slot coin → Gets $8 (reward!)
+
+Finder C: Brand new player (first week)
+  → Finds slot coin → Higher variance, exciting payouts to hook them
+```
+
+---
+
+## 🔓 Finding Limits with Two Coin Types
+
+### The Rule
+**Your limit = highest amount YOU contributed (not what finder received)**
+
+| Action | Your Limit Becomes |
+|--------|-------------------|
+| Hide $10 fixed coin | $10 |
+| Contribute $10 to pool (slot) | $10 |
+| Hide $100 fixed coin | $100 |
+| Contribute $100 to pool (slot) | $100 |
+
+### Example
+```
+User A hides $10 as pool contribution (slot machine)
+  → User A's finding limit: $10 ✓
+  → $10 goes to company pool
+
+User B finds that coin
+  → Algorithm pays User B: $3 (or $15, whatever)
+  → User B's finding limit: UNCHANGED (they didn't hide anything)
+```
+
+---
+
+## 👁️ Visual Distinction
+
+Coins MUST look different in AR so players know what they're chasing:
+
+| Coin Type | Visual Style |
+|-----------|--------------|
+| Fixed Value | [Design TBD - distinct look] |
+| Pool/Slot Machine | [Design TBD - mystery look] |
+
+This lets players:
+- Choose to race for known fixed-value coins
+- Try their luck on mystery slot coins
+- Make strategic decisions about which to pursue
 
 ---
 
@@ -161,18 +253,27 @@ User arrives in San Francisco, opens app
 
 ---
 
-## 🔢 Fixed vs Dynamic Coins
+## 🔢 Complete Coin Type Matrix
 
-| Coin Type | Value Set | When Value Known |
-|-----------|-----------|------------------|
-| System-placed | At collection | User finds it |
-| User-hidden | At hiding | Always visible |
-| Sponsor-hidden | At hiding | Always visible |
+| Who Hides | Fixed Value | Pool/Slot Machine |
+|-----------|-------------|-------------------|
+| **System** | ✅ Can place fixed coins | ✅ Primary method |
+| **User** | ✅ "I'm hiding exactly $10" | ✅ "I'm contributing $10 to the pool" |
+| **Sponsor** | ✅ Branded fixed-value coins | ✅ Branded mystery coins |
 
-**Important**: User and sponsor coins have FIXED values because:
-- Users pay real money to hide specific amounts
-- Sponsors pay for specific coin values
-- These cannot be dynamically adjusted
+### When to Use Each
+
+**Fixed Value Coins**:
+- Create urgency and races
+- High-dollar "mythical" coins
+- Sponsor promotions with known prizes
+- Users raising their finding limits
+
+**Pool/Slot Machine Coins**:
+- Keep game constantly populated
+- Create excitement and mystery
+- Occasional big wins to create buzz
+- System's primary distribution method
 
 ---
 

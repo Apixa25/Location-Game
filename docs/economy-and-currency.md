@@ -104,19 +104,37 @@ Every player has a wallet showing:
 ## 🔓 Finding Limits
 
 ### The Core Mechanic
-Your **finding limit = your highest single hidden coin value**
+Your **finding limit = your highest single CONTRIBUTION**
 
-| Coins Hidden | Max Find |
-|--------------|----------|
-| None | $1.00 |
-| $5 coin once | $5.00 |
-| $25 coin once | $25.00 |
-| $100 coin once | $100.00 |
+This applies to BOTH coin types:
+- Fixed value coins: contribution = the coin value
+- Pool/slot coins: contribution = what you put in the pool
+
+| Action | Max Find |
+|--------|----------|
+| Nothing hidden | $1.00 |
+| Hid $5 fixed coin | $5.00 |
+| Contributed $5 to pool | $5.00 |
+| Hid $25 fixed coin | $25.00 |
+| Contributed $100 to pool | $100.00 |
 
 ### Key Rules
+- **Based on YOUR contribution** (not what finder receives)
 - **Based on single highest** (not cumulative)
 - **Never decreases** - once unlocked, permanent
 - **Displayed on Prize Finder** - always visible
+- **Both coin types count equally** toward limit
+
+### Example: Pool Contribution and Limits
+```
+User A contributes $10 to pool (slot machine coin)
+  → User A's finding limit: $10 ✓
+  → Doesn't matter what the finder gets paid
+
+User B finds that coin, algorithm pays $15
+  → User B's limit: UNCHANGED (they didn't hide/contribute)
+  → User B just got lucky on the slot machine
+```
 
 ### Finding Over-Limit Coins
 When a player finds a coin above their limit:
@@ -147,7 +165,26 @@ When a player finds a coin above their limit:
 
 ---
 
-## 🎰 Gambling Mechanics (Future)
+## 🎰 Two Ways to Hide Coins
+
+### Option 1: Fixed Value
+- "I'm hiding exactly $10"
+- Finder gets $10
+- Creates races for known value
+- Good for raising finding limit with certainty
+
+### Option 2: Pool Contribution (Slot Machine)
+- "I'm contributing $10 to the pool"
+- Finder gets algorithm-determined amount
+- Could be $2... or $50!
+- Your $10 still counts toward YOUR finding limit
+- Adds mystery and excitement
+
+See [Dynamic Coin Distribution](./dynamic-coin-distribution.md) for full details.
+
+---
+
+## 🎲 Gambling Mechanics (Future)
 
 ### Hide-for-Bonus
 - User hides a coin (e.g., $10)
