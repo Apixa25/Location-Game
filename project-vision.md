@@ -219,43 +219,125 @@ I'm learning as we go, and I'm trusting you to be my safety net. **Don't just tr
 
 ## 🏗️ Confirmed Tech Stack
 
+> 📖 **For detailed setup instructions, code examples, and component reference, see: [Tech Stack Setup Guide](./docs/tech-stack-setup-guide.md)**
+
 ### 📱 Mobile App Layer
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| **Framework** | React Native | Cross-platform iOS + Android |
-| **AR Library** | ViroReact | Camera viewfinder + 3D coin overlays |
-| **Language** | TypeScript | Type safety, better DX |
-| **GPS/Location** | react-native-geolocation-service | Coin placement & discovery |
-| **Permissions** | react-native-permissions | Camera & location access |
-| **State Management** | Zustand (or Redux) | App state |
+| Component | Technology | Version | Purpose |
+|-----------|------------|---------|---------|
+| **Framework** | React Native | 0.73+ | Cross-platform iOS + Android |
+| **AR Library** | @reactvision/react-viro | 2.50+ | Camera viewfinder + 3D coin overlays |
+| **Language** | TypeScript | 5.x | Type safety, better DX |
+| **State Management** | Zustand | 4.x | Lightweight app state |
+| **Navigation** | React Navigation | 6.x | Screen navigation |
+| **GPS/Location** | react-native-geolocation-service | 5.x | High-accuracy coin placement & discovery |
+| **Permissions** | react-native-permissions | 4.x | Camera & location access |
+| **Haptics** | react-native-haptic-feedback | 2.x | Vibration feedback for proximity |
+| **Local Storage** | @react-native-async-storage | 1.x | Offline data caching |
+| **HTTP Client** | Axios | 1.x | Backend API communication |
 
 ### 🖥️ Backend Layer (TBD)
 | Component | Technology | Purpose |
 |-----------|------------|---------|
-| **API** | Node.js + Express | REST/GraphQL endpoints |
-| **Database** | PostgreSQL | Users, coins, transactions |
-| **Cloud** | AWS or GCP | Hosting, scaling |
-| **Bitcoin** | TBD | Real-value coin integration |
+| **Runtime** | Node.js 20 LTS | Server runtime |
+| **API** | Express.js or Fastify | REST endpoints |
+| **Database** | PostgreSQL + PostGIS | Users, coins, geospatial queries |
+| **ORM** | Prisma | Type-safe database queries |
+| **Auth** | Firebase Auth | Gmail/email login |
+| **Cloud** | AWS or Vercel | Hosting, scaling |
+| **Bitcoin** | Strike API or OpenNode | Real-value coin integration |
 
 ### 🎮 Why React Native + ViroReact?
+
+**Research conducted January 2026 - Flutter AR was rejected:**
+- Flutter's main AR plugin (ar_flutter_plugin) last updated November 2022 - **abandoned**
+- Flutter lacks native AR support, relies on unmaintained third-party plugins
+- Risk of breaking with no maintenance = unacceptable for real-money app
+
+**ViroReact advantages:**
+- ✅ **Actively maintained** - v2.50.1 released December 2025
+- ✅ **Corporate backing** - Morrow acquired ReactVision, now has full-time team
 - ✅ Single codebase for iOS + Android
 - ✅ JavaScript/TypeScript (familiar, large ecosystem)
-- ✅ ViroReact actively maintained (ReactVision/Morrow, 2025)
-- ✅ Supports 3D models (.gltf/.obj) with animations
-- ✅ ARKit (iOS) + ARCore (Android) support
-- ✅ Good enough for our "Prize Finder" spinning coins
+- ✅ **60+ AR components** - scenes, 3D objects, animations, particles, physics, audio
+- ✅ Supports 3D models (.obj/.vrx) with skeletal animations
+- ✅ ARKit (iOS) + ARCore (Android) native integration
+- ✅ Built-in particle effects for coin sparkles
+- ✅ Spatial audio for immersive experience
+- ✅ Physics engine for realistic interactions
 - ✅ Can pivot to Unity later if we need more advanced AR
+
+### 🪙 ViroReact Components We'll Use
+
+| Component | Purpose in Black Bart's Gold |
+|-----------|------------------------------|
+| `ViroARSceneNavigator` | Entry point, manages AR experience |
+| `ViroARScene` | Container for Prize Finder view |
+| `Viro3DObject` | Spinning gold doubloon coins |
+| `ViroNode` | Group coin + sparkles + value label |
+| `ViroParticleEmitter` | Sparkle/glow effects on coins |
+| `ViroText` | 3D value labels ("$5.00") |
+| `ViroSound` | Black Bart congratulations voice |
+| `ViroSpatialSound` | Coin proximity audio cues |
+| `ViroAnimations` | Spin, bob, fly-to-camera effects |
+| `ViroAmbientLight` | Scene lighting |
+
+### 📁 Project Structure
+```
+BlackBartsGold/
+├── src/
+│   ├── screens/          # Home, PrizeFinder, Map, Wallet
+│   ├── ar/               # ViroARScene, CoinObject, animations
+│   ├── components/       # UI: Compass, GasMeter, MiniMap
+│   ├── store/            # Zustand state management
+│   ├── services/         # API, location, haptics
+│   ├── hooks/            # Custom React hooks
+│   └── types/            # TypeScript interfaces
+├── assets/
+│   ├── models/           # coin.obj, coin.mtl
+│   ├── audio/            # Black Bart voice lines
+│   └── images/           # sparkle.png, UI assets
+└── docs/                 # Project documentation
+```
 
 ---
 
 ## 🔧 Key Technical Considerations
 
 ### AR Implementation ("Prize Finder")
-- Camera-based viewfinder showing virtual coins in real-world space
-- ViroARScene for camera background
-- Viro3DObject for spinning coin models
-- ViroAnimations for spin/glow effects
-- GPS for location tracking and coin placement
+
+**Scene Structure:**
+```
+ViroARSceneNavigator (entry point)
+└── ViroARScene (Prize Finder camera view)
+    ├── ViroAmbientLight (scene lighting)
+    ├── ViroDirectionalLight (shadows)
+    └── ViroNode (per coin)
+        ├── Viro3DObject (spinning doubloon)
+        ├── ViroParticleEmitter (sparkles)
+        ├── ViroText (value label)
+        └── ViroSound (collection sound)
+```
+
+**Key AR Features Used:**
+- `onTrackingUpdated` - Show "tracking lost" UI when AR fails
+- `onCameraARHitTest` - Crosshair targeting for coin selection
+- `onClick` / `onHover` - Coin interaction events
+- `ViroAnimations` - Spin, bob, fly-to-camera on collect
+- `ViroParticleEmitter` - Gold sparkle effects
+- `ViroSpatialSound` - Audio cues that get louder as you approach
+
+**Collection Animation Sequence:**
+1. Player taps coin (crosshairs centered)
+2. Coin flies toward camera (`flyForward` animation)
+3. Coin spins rapidly showing both sides (`spinFast`)
+4. Black Bart congratulation voice plays
+5. Coin shrinks and fades (`shrink` + `fadeOut`)
+6. Value added to wallet with UI animation
+
+**AR Tracking States:**
+- `NORMAL` - Full AR experience
+- `LIMITED` - Show warning, AR may be unstable
+- `UNAVAILABLE` - Show error screen, can't play
 
 ### Financial System
 - Bitcoin integration for real-value coins
@@ -265,12 +347,26 @@ I'm learning as we go, and I'm trusting you to be my safety net. **Don't just tr
 - Transaction history and audit trails
 
 ### Location System
-- **Configurable radiuses** (initial defaults, can be adjusted):
-  - ~¼ mile radius for system-placed coins (walkable for kids)
-  - ~10 mile radius for user-hidden coins
+
+**GPS Package:** `react-native-geolocation-service`
+- Uses Google FusedLocationProviderClient (Android) - most accurate
+- Native iOS location services
+- High-accuracy mode for coin placement
+
+**Key Functions:**
+- `getCurrentPosition()` - Get current location once
+- `watchPosition()` - Continuous tracking with distance filter
+- `distanceFilter: 5` - Update every 5 meters of movement
+
+**Configurable radiuses** (initial defaults, can be adjusted):
+- ~¼ mile radius for system-placed coins (walkable for kids)
+- ~10 mile radius for user-hidden coins
+
+**Features:**
 - Accurate GPS positioning (ACCESS_FINE_LOCATION)
 - Geofencing for coin discovery
 - Kid-friendly design: walkable distances so players don't need to drive
+- Vibration feedback intensifies as player approaches coin
 
 ### Security (Critical!)
 - This involves real money - security is paramount
@@ -292,6 +388,24 @@ Our collaboration is successful when:
 - ✅ Security is rock-solid (real money involved!)
 - ✅ Code changes are understandable and well-explained
 - ✅ We maintain high energy and enthusiasm while building
+
+---
+
+## 📚 Related Documents
+
+| Document | Purpose |
+|----------|---------|
+| [Tech Stack Setup Guide](./docs/tech-stack-setup-guide.md) | **START HERE** - Detailed setup instructions, ViroReact reference, code examples |
+| [Project Scope](./docs/project-scope.md) | Full feature breakdown, phases, business model |
+| [Prize Finder Details](./docs/prize-finder-details.md) | AR camera UI, crosshairs, compass, gas meter |
+| [Coins & Collection](./docs/coins-and-collection.md) | Coin types, values, collection mechanics |
+| [Economy & Currency](./docs/economy-and-currency.md) | BBG currency, Bitcoin conversion |
+| [Treasure Hunt Types](./docs/treasure-hunt-types.md) | Different hunt modes (radar, compass, timed) |
+| [User Accounts & Security](./docs/user-accounts-security.md) | Auth, security considerations |
+| [Social Features](./docs/social-features.md) | Friends, leaderboards, guilds |
+| [Admin Dashboard](./docs/admin-dashboard.md) | Coin management, analytics |
+| [Dynamic Coin Distribution](./docs/dynamic-coin-distribution.md) | Cloud system for coin placement |
+| [Safety & Legal Research](./docs/safety-and-legal-research.md) | Location gaming regulations |
 
 ---
 
