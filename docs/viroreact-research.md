@@ -691,29 +691,34 @@ ViroMaterials.createMaterials({
 | **Compass Overlay** | `ViroImage` + device heading | UI layer |
 | **Mini-map Overlay** | Standard React Native View | Overlay on AR |
 
-### ✅ Possible with Some Work
+### ✅ Possible with Web Mercator Projection
 
 | Feature | Approach |
 |---------|----------|
-| **GPS-based coin placement** | Convert GPS to AR coords, show when in range |
-| **Distance to coin** | Calculate from GPS, display in UI |
-| **Hot/cold vibration** | GPS distance → vibration intensity |
-| **Indoor AR hunts** | Pure AR mode, no GPS |
-| **Coin highlighting on hover** | `onHover` + material change |
+| **GPS-based coin placement** | ✅ `latLongToMerc()` + `transformPointToAR()` - see GPS section |
+| **Coins at real-world locations** | ✅ Web Mercator projection converts GPS → AR coords |
+| **Distance to coin** | ✅ Calculate from GPS using Haversine formula |
+| **Compass direction to coin** | ✅ Calculate bearing, display in UI |
+| **Hot/cold vibration** | ✅ GPS distance → vibration intensity |
+| **Indoor AR hunts** | ✅ Pure AR mode, no GPS |
+| **Coin highlighting on hover** | ✅ `onHover` + material change |
+
+**Key Insight**: GPS positioning IS fully supported - just need the Web Mercator projection code!
 
 ---
 
 ## What We CANNOT Build (Or Need Workarounds)
 
-### ❌ Not Directly Supported
+### ⚠️ Challenges (Not Blockers)
 
-| Feature | Issue | Workaround |
-|---------|-------|------------|
-| **Precise GPS-to-AR alignment** | AR and GPS don't natively integrate | Use GPS for proximity only |
-| **World-scale outdoor AR** | Drift over long distances | Keep AR experiences localized |
+| Feature | Challenge | Solution |
+|---------|-----------|----------|
+| **Precise GPS-to-AR at distance** | ~50% accuracy at 100m+ | Use hybrid approach: map → compass → AR |
+| **World-scale outdoor AR** | Drift over long distances | Keep AR sessions localized, recalibrate |
 | **Occlusion (coins behind objects)** | Basic ARKit/ARCore only | Accept visual imperfection |
-| **Shared AR multiplayer** | Not built-in | Would need custom server sync |
-| **Persistent AR anchors** | Session-only by default | Use GPS as source of truth |
+| **Shared AR multiplayer** | Not built-in | Custom server sync (use GPS as source of truth) |
+| **Persistent AR anchors** | Session-only by default | Use GPS database as source of truth |
+| **Indoor GPS** | GPS doesn't work indoors | Use AR-only mode for indoor hunts |
 
 ### ⚠️ Requires Native Code
 
