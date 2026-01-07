@@ -395,7 +395,8 @@ Our collaboration is successful when:
 
 | Document | Purpose |
 |----------|---------|
-| [Tech Stack Setup Guide](./docs/tech-stack-setup-guide.md) | **START HERE** - Detailed setup instructions, ViroReact reference, code examples |
+| [BUILD GUIDE](./docs/BUILD-GUIDE.md) | **🏴‍☠️ START HERE** - Step-by-step prompts to build the entire app |
+| [Tech Stack Setup Guide](./docs/tech-stack-setup-guide.md) | Detailed setup instructions, ViroReact reference, code examples |
 | [Project Scope](./docs/project-scope.md) | Full feature breakdown, phases, business model |
 | [Prize Finder Details](./docs/prize-finder-details.md) | AR camera UI, crosshairs, compass, gas meter |
 | [Coins & Collection](./docs/coins-and-collection.md) | Coin types, values, collection mechanics |

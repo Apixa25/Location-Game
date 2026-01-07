@@ -282,51 +282,282 @@ FBX models can include skeletal animations:
 ## GPS & Location-Based AR
 
 ### The Challenge
-ViroReact's AR coordinate system is **local** (relative to camera start position), not **geographic**. GPS coordinates must be converted.
+ViroReact's AR coordinate system is **local** (relative to camera start position), not **geographic**. GPS coordinates must be converted using **Web Mercator Projection**.
 
 ### Coordinate System
 - Camera starts at `[0, 0, 0]`
-- Forward vector: `[0, 0, -1]`
+- Forward vector: `[0, 0, -1]` (negative Z = north/forward)
 - Up vector: `[0, 1, 0]`
 - Right-handed coordinate system
+- **X-axis** = East/West (longitude)
+- **Z-axis** = North/South (latitude)
+- **Y-axis** = Up/Down (altitude)
 
-### GPS to AR Conversion
+---
+
+### ✅ THE SOLUTION: Web Mercator Projection
+
+This is how developers are actually doing GPS-based AR with ViroReact:
+
+#### Step 1: latLongToMerc Function
+Converts GPS coordinates (degrees) to meters using Earth's radius:
+
 ```javascript
-// Convert GPS coordinates to AR position relative to user
-function gpsToArPosition(userLat, userLon, targetLat, targetLon) {
-  const R = 6371000; // Earth's radius in meters
+// Convert lat/long degrees to meters using Web Mercator projection
+function latLongToMerc(lat_deg, lon_deg) {
+  const sm_a = 6378137.0; // Earth's radius in meters
 
-  const dLat = (targetLat - userLat) * Math.PI / 180;
-  const dLon = (targetLon - userLon) * Math.PI / 180;
+  const lon_rad = (lon_deg / 180.0) * Math.PI;
+  const lat_rad = (lat_deg / 180.0) * Math.PI;
 
-  // Approximate flat-earth conversion (works for short distances)
-  const x = dLon * R * Math.cos(userLat * Math.PI / 180); // East-West
-  const z = -dLat * R; // North-South (negative because -Z is forward)
+  const xmeters = sm_a * lon_rad;
+  const ymeters = sm_a * Math.log((Math.sin(lat_rad) + 1) / Math.cos(lat_rad));
 
-  return [x, 0, z]; // Y is altitude, keep at 0 for ground level
+  return { x: xmeters, y: ymeters };
 }
 ```
 
-### Known GPS Challenges
-1. **Drift**: ARKit/ARCore tracking drifts over long distances
-2. **GPS Accuracy**: Consumer GPS is ~3-10 meters accurate
-3. **Indoor Issues**: GPS doesn't work indoors
-4. **Initial Alignment**: Need to calibrate AR north to true north
+#### Step 2: transformPointToAR Function
+Calculates the AR position relative to the device:
+
+```javascript
+// Transform GPS point to AR coordinates relative to device position
+function transformPointToAR(targetLat, targetLon, deviceLat, deviceLon) {
+  const objPoint = latLongToMerc(targetLat, targetLon);
+  const devicePoint = latLongToMerc(deviceLat, deviceLon);
+
+  // Calculate relative position in meters
+  // Longitude (E/W) → X-axis
+  // Latitude (N/S) → Z-axis (negated: negative Z = north/forward)
+  const objFinalPosX = objPoint.x - devicePoint.x;
+  const objFinalPosZ = -(objPoint.y - devicePoint.y); // Negate for AR coord system
+
+  return { x: objFinalPosX, y: 0, z: objFinalPosZ };
+}
+```
+
+#### Step 3: Apply Compass Rotation (Android)
+iOS with `worldAlignment="GravityAndHeading"` handles this automatically.
+Android requires manual rotation:
+
+```javascript
+// Rotate AR coordinates by device heading (Android only)
+function rotateByHeading(x, z, headingDegrees) {
+  const angle = headingDegrees * Math.PI / 180;
+
+  const newX = x * Math.cos(angle) - z * Math.sin(angle);
+  const newZ = z * Math.cos(angle) + x * Math.sin(angle);
+
+  return { x: newX, z: newZ };
+}
+```
+
+#### Complete Implementation Example
+
+```javascript
+import React, { useState, useEffect } from 'react';
+import { ViroARScene, Viro3DObject, ViroAmbientLight } from '@reactvision/react-viro';
+import Geolocation from 'react-native-geolocation-service';
+import CompassHeading from 'react-native-compass-heading';
+import { Platform } from 'react-native';
+
+// Mercator projection
+const latLongToMerc = (lat_deg, lon_deg) => {
+  const sm_a = 6378137.0;
+  const lon_rad = (lon_deg / 180.0) * Math.PI;
+  const lat_rad = (lat_deg / 180.0) * Math.PI;
+  const xmeters = sm_a * lon_rad;
+  const ymeters = sm_a * Math.log((Math.sin(lat_rad) + 1) / Math.cos(lat_rad));
+  return { x: xmeters, y: ymeters };
+};
+
+// Transform to AR coordinates
+const transformPointToAR = (targetLat, targetLon, deviceLat, deviceLon, heading) => {
+  const objPoint = latLongToMerc(targetLat, targetLon);
+  const devicePoint = latLongToMerc(deviceLat, deviceLon);
+
+  let x = objPoint.x - devicePoint.x;
+  let z = -(objPoint.y - devicePoint.y);
+
+  // Apply heading rotation on Android
+  if (Platform.OS === 'android' && heading !== null) {
+    const angle = heading * Math.PI / 180;
+    const rotatedX = x * Math.cos(angle) - z * Math.sin(angle);
+    const rotatedZ = z * Math.cos(angle) + x * Math.sin(angle);
+    x = rotatedX;
+    z = rotatedZ;
+  }
+
+  return [x, 0, z]; // [x, y, z] - y=0 for ground level
+};
+
+const CoinScene = ({ coinLat, coinLon }) => {
+  const [deviceLocation, setDeviceLocation] = useState(null);
+  const [heading, setHeading] = useState(0);
+  const [coinPosition, setCoinPosition] = useState([0, 0, -5]);
+
+  useEffect(() => {
+    // Watch device location
+    const watchId = Geolocation.watchPosition(
+      (position) => {
+        setDeviceLocation({
+          lat: position.coords.latitude,
+          lon: position.coords.longitude,
+        });
+      },
+      (error) => console.log(error),
+      { enableHighAccuracy: true, distanceFilter: 1 }
+    );
+
+    // Watch compass heading
+    CompassHeading.start(3, (result) => {
+      setHeading(result.heading);
+    });
+
+    return () => {
+      Geolocation.clearWatch(watchId);
+      CompassHeading.stop();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (deviceLocation) {
+      const arPos = transformPointToAR(
+        coinLat, coinLon,
+        deviceLocation.lat, deviceLocation.lon,
+        heading
+      );
+      setCoinPosition(arPos);
+    }
+  }, [deviceLocation, heading, coinLat, coinLon]);
+
+  return (
+    <ViroARScene worldAlignment={Platform.OS === 'ios' ? 'GravityAndHeading' : 'Gravity'}>
+      <ViroAmbientLight color="#ffffff" />
+      <Viro3DObject
+        source={require('./models/coin.obj')}
+        position={coinPosition}
+        scale={[0.5, 0.5, 0.5]}
+        type="OBJ"
+        onClick={() => console.log('Coin collected!')}
+      />
+    </ViroARScene>
+  );
+};
+
+export default CoinScene;
+```
+
+---
+
+### worldAlignment Settings
+
+| Platform | Setting | Behavior |
+|----------|---------|----------|
+| **iOS** | `GravityAndHeading` | Automatic compass alignment, -Z = magnetic north |
+| **iOS** | `Gravity` | Y-axis = gravity only, no compass |
+| **Android** | `Gravity` | Must manually rotate by compass heading |
+
+**Best Practice**: Use `GravityAndHeading` on iOS, manual rotation on Android.
+
+---
+
+### Known GPS/AR Challenges
+
+| Challenge | Impact | Mitigation |
+|-----------|--------|------------|
+| **GPS Accuracy** | 3-10 meter error | Use AR for final targeting |
+| **Compass Drift** | Objects shift over time | Re-calibrate periodically |
+| **AR Drift** | Tracking degrades over long distances | Keep AR sessions localized |
+| **Indoor** | GPS doesn't work | Use AR-only mode indoors |
+| **Magnetic Interference** | Compass unreliable near metal | Warn users, use position deltas |
+
+### Accuracy Expectations
+From real-world implementations:
+> "Objects show up where they are supposed to about 50% of the time at distance, but accuracy improves significantly the closer you get."
+
+---
 
 ### Recommended Approach for Black Bart's Gold
-1. Use GPS to get user within range (~30 feet)
-2. Use AR for final visual confirmation
-3. Don't rely on precise GPS-to-AR positioning
-4. Show coins when user is "close enough" in GPS
-5. Let visual AR do the final targeting
 
-### ARCore Geospatial API (Advanced)
+Based on research, here's the **hybrid approach** (what Pokémon GO does):
+
+```
+1. MAP VIEW (Far Away)
+   └── Show coin on 2D map
+   └── User navigates using map
+   └── GPS distance displayed
+
+2. TRANSITION ZONE (~100 meters)
+   └── "Coin nearby!" notification
+   └── Switch to compass mode
+   └── Vibration feedback begins
+
+3. AR VIEW (Close Range ~30 meters)
+   └── AR view activates
+   └── Coin rendered at GPS-calculated position
+   └── User sees coin in camera
+   └── Accuracy is good at this range
+
+4. COLLECTION ZONE (~10 meters)
+   └── Coin is clearly visible
+   └── User centers crosshairs
+   └── Tap to collect
+```
+
+**Why this works:**
+- Long distances: Map is more reliable than AR
+- Short distances: GPS error is acceptable, AR is accurate
+- Avoids the worst of both worlds (AR drift + GPS error)
+
+---
+
+### Position Delta Calibration (Advanced)
+
+For better accuracy than compass, use **position delta** method:
+
+```javascript
+// Instead of trusting compass, calculate heading from movement
+let lastPosition = null;
+
+function calculateHeadingFromMovement(currentLat, currentLon) {
+  if (lastPosition) {
+    const deltaLat = currentLat - lastPosition.lat;
+    const deltaLon = currentLon - lastPosition.lon;
+
+    // Calculate bearing from movement direction
+    const heading = Math.atan2(deltaLon, deltaLat) * 180 / Math.PI;
+    return (heading + 360) % 360; // Normalize to 0-360
+  }
+  lastPosition = { lat: currentLat, lon: currentLon };
+  return null;
+}
+```
+
+This is more accurate than compass but requires user to be moving.
+
+---
+
+### Required Libraries for GPS+AR
+
+```bash
+npm install react-native-geolocation-service
+npm install react-native-compass-heading
+# or
+npm install react-native-simple-compass
+```
+
+---
+
+### ARCore Geospatial API (Advanced Future Option)
+
 For more precise outdoor positioning, ARCore Geospatial API offers:
 - WGS84 anchors (absolute GPS positioning)
 - Terrain anchors (relative to ground)
 - Rooftop anchors (relative to buildings)
+- Visual Positioning System (VPS) for sub-meter accuracy
 
-**Note**: This is native ARCore, would need custom bridging to ViroReact.
+**Note**: This is native ARCore, would need custom bridging to ViroReact. Consider for Phase 3+.
 
 ---
 
@@ -518,9 +749,15 @@ ViroMaterials.createMaterials({
 
 ### GitHub Resources
 - [ViroReact Releases](https://github.com/ReactVision/viro/releases)
-- [GPS Positioning Issue #95](https://github.com/viromedia/viro/issues/95)
-- [GPS Coordinates Issue #131](https://github.com/viromedia/viro/issues/131)
+- [GPS Positioning Issue #95](https://github.com/viromedia/viro/issues/95) - POI positioning discussion
+- [GPS Coordinates Issue #131](https://github.com/viromedia/viro/issues/131) - latLongToMerc conversion code
+- [ViroCore GPS Issue #182](https://github.com/viromedia/virocore/issues/182) - Complete Java implementation
 - [Rotation Issue #538](https://github.com/viromedia/viro/issues/538)
+- [Mapbox AR (Archived)](https://github.com/mapbox/react-native-mapbox-ar) - Location-based AR reference
+
+### GPS + AR Tutorials
+- [Ordina: Indoor Navigation with ViroReact](https://blog.ordina-jworks.io/iot/2019/12/20/ar-signpost.html) - Web Mercator projection explained
+- [Instructables: AR Objects at GPS Coordinates](https://www.instructables.com/Placing-AR-Objects-at-GPS-Coordinates-in-Augmented/) - Position delta calibration
 
 ### Morrow (Current Owners)
 - [Morrow AR/VR](https://www.themorrow.digital/augmented-reality)
