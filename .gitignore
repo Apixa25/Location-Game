@@ -119,3 +119,8 @@ temp/
 # Local development
 local/
 .local/
+
+# Ruby bundler
+.bundle/
+vendor/bundle/
+Gemfile.lock
