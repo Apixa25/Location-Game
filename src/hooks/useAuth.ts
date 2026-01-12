@@ -4,8 +4,9 @@
 // Reference: docs/BUILD-GUIDE.md - Sprint 5.3: Protected Routes & Session
 // Reference: docs/user-accounts-security.md
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useUserStore } from '../store';
+import { useShallow } from 'zustand/react/shallow';
 import {
   getCurrentUser,
   logout as authLogout,
@@ -83,19 +84,45 @@ export function useAuth(): UseAuthReturn {
   const [isLoading, setIsLoading] = useState(true);
 
   // ─────────────────────────────────────────────────────────────────────────
-  // STORE STATE
+  // STORE STATE - Use useShallow to prevent infinite rerenders
   // ─────────────────────────────────────────────────────────────────────────
 
-  const user = useUserStore((state) => state.user);
-  const setUser = useUserStore((state) => state.setUser);
-  const clearUser = useUserStore((state) => state.clearUser);
+  const storeState = useUserStore(
+    useShallow((state) => ({
+      userId: state.userId,
+      email: state.email,
+      isAuthenticated: state.isAuthenticated,
+      bbgBalance: state.bbgBalance,
+      gasRemaining: state.gasRemaining,
+      findLimit: state.findLimit,
+      setUser: state.setUser,
+      logout: state.logout,
+    }))
+  );
+
+  // Build user object for compatibility - memoize to prevent unnecessary recreations
+  const user: User | null = useMemo(() => {
+    if (!storeState.userId || !storeState.email) return null;
+    return {
+      id: storeState.userId,
+      email: storeState.email,
+      bbg_balance: storeState.bbgBalance,
+      gas_remaining: storeState.gasRemaining,
+      find_limit: storeState.findLimit,
+      subscription_status: storeState.gasRemaining > 0 ? 'active' : 'inactive',
+    };
+  }, [storeState.userId, storeState.email, storeState.bbgBalance, storeState.gasRemaining, storeState.findLimit]);
+  
+  // Wrapper functions for store actions
+  const setUser = storeState.setUser;
+  const clearUser = storeState.logout;
 
   // ─────────────────────────────────────────────────────────────────────────
   // COMPUTED VALUES
   // ─────────────────────────────────────────────────────────────────────────
 
-  const isAuthenticated = user !== null;
-  const hasActiveSubscription = user?.subscription_status === 'active';
+  const isAuthenticated = storeState.isAuthenticated;
+  const hasActiveSubscription = storeState.gasRemaining > 0;
 
   // ─────────────────────────────────────────────────────────────────────────
   // EFFECTS

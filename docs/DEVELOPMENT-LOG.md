@@ -9,9 +9,9 @@
 | Item | Value |
 |------|-------|
 | **Project Path** | `C:\Users\Admin\Location-Game` |
-| **Current Sprint** | Sprint 5 Complete ✅ |
-| **Next Sprint** | Sprint 6: Wallet & Economy |
-| **Last Updated** | January 11, 2026 |
+| **Current Sprint** | Phase 1 MVP Complete ✅ |
+| **Current Status** | Full App Flow Working with Test Data ✅ |
+| **Last Updated** | January 12, 2026 (Session 2) |
 
 ---
 
@@ -505,6 +505,72 @@ ANIMATIONS.VALUE_POPUP    // +$5.00 floating text
 
 ---
 
+### Android Build & Emulator Testing ✅ (January 12, 2026)
+
+#### Gradle Issues Fixed
+- Fixed Gradle cache corruption on Windows (`metadata.bin` errors)
+- Set `GRADLE_USER_HOME=C:\gradle-home` to use fresh cache directory
+- Upgraded to Gradle 8.13 as required by React Native 0.81.4
+- Added `org.gradle.configuration-cache=false` to `gradle.properties`
+
+#### SoLoader / Native Library Issues Fixed
+- **Problem**: `libreact_featureflagsjni.so not found` crash on startup
+- **Cause**: React Native 0.81+ uses merged SO libraries, but SoLoader wasn't configured
+- **Fix**: Updated `MainApplication.kt` to use `OpenSourceMergedSoMapping`:
+  ```kotlin
+  SoLoader.init(this, OpenSourceMergedSoMapping)
+  ```
+
+#### ViroReact ARM Architecture Handling
+- **Problem**: ViroReact only provides ARM native libraries (no x86/x86_64)
+- **Impact**: App crashed on x86 emulators with `libviro_renderer.so not found`
+- **Fix**: Added conditional ViroReact loading in `MainApplication.kt`:
+  ```kotlin
+  private fun isARMArchitecture(): Boolean {
+    val supportedAbis = Build.SUPPORTED_ABIS
+    return supportedAbis.any { it.startsWith("arm") || it.startsWith("aarch") }
+  }
+  // Only add ViroReact packages on ARM devices
+  if (isARMArchitecture()) {
+    add(ReactViroPackage(ReactViroPackage.ViroPlatform.GVR))
+    add(ReactViroPackage(ReactViroPackage.ViroPlatform.AR))
+  }
+  ```
+- **Result**: App runs on x86 emulator for UI testing; AR requires ARM device
+
+#### React Version Mismatch Fixed
+- **Problem**: `react: 19.2.3` vs `react-native-renderer: 19.1.0` caused crashes
+- **Fix**: Downgraded React to 19.1.0 to match RN 0.81.4 peer dependency
+  ```bash
+  npm install react@19.1.0 --save
+  ```
+
+#### Component Name Fixed
+- **Problem**: `MainActivity.kt` used `"ViroStarterKit"` but app.json uses `"BlackBartsGold"`
+- **Fix**: Updated `getMainComponentName()` to return `"BlackBartsGold"`
+
+#### Missing Dependencies Added
+- Added `@react-native-community/netinfo` package
+- Added to manual dependencies in `android/app/build.gradle`:
+  ```gradle
+  implementation project(':react-native-community_netinfo')
+  ```
+- Commented out audio file imports in `CoinObject.tsx` (placeholders not yet created)
+
+#### Database Setup
+- PostgreSQL 17.2 installed and running
+- Database `black_barts_gold` created in pgAdmin
+- Backend `.env` configured with connection string
+
+#### Key Files Modified
+- `android/app/src/main/java/com/virostarterkit/MainApplication.kt` - SoLoader + ViroReact conditional
+- `android/app/src/main/java/com/virostarterkit/MainActivity.kt` - Component name fix
+- `android/app/build.gradle` - Added netinfo dependency
+- `android/gradle.properties` - Disabled config cache
+- `src/ar/CoinObject.tsx` - Commented audio requires
+
+---
+
 ## 🎉 PHASE 1 MVP COMPLETE!
 
 All 8 sprints are now complete. The Black Bart's Gold app includes:
@@ -584,7 +650,109 @@ export const useStoreName = create<State & Actions>()(
 1. **ViroARSceneNavigator type** - Using type assertion `as () => React.JSX.Element` as workaround
 2. **Sound effects** - Placeholders, need actual audio files in `assets/audio/`
 3. **3D coin model** - Using ViroBox placeholder, need .obj file in `assets/models/`
-4. **GPS integration** - Using mock positions, Sprint 3 will add real GPS
+4. **ViroReact x86 limitation** - AR features only work on ARM devices (real phones); x86 emulators show UI only
+5. ~~**Minor auth bug** - `clearUser is not a function` error in useAuth hook~~ - **FIXED** (Session 2)
+6. ~~**Backend not started** - Need to run `npm run dev` in backend folder~~ - **FIXED** (Session 2)
+7. **Location permission** - Emulator shows "never_ask_again" status; need to manually grant or use Settings
+
+---
+
+## 🎉 Session 2 Progress (January 12, 2026)
+
+### What Was Done
+1. **Backend Server Running** ✅
+   - PostgreSQL database connected
+   - API running on `http://localhost:3000/api/v1`
+
+2. **Test Data Seeding** ✅
+   - Created `backend/prisma/seed.ts` with comprehensive test data
+   - Test account: `pirate@blackbartsgold.com` / `treasure123`
+   - Account has: $50 balance, 45 days gas, $10 find limit
+   - 7 test coins placed at varying distances
+
+3. **MapScreen Upgraded** ✅
+   - Replaced placeholder with functional radar-style map
+   - Shows nearby coins with distance/direction
+   - Coin list with lock status indicators
+   - GPS tracking integration
+
+4. **Auth Hook Bug Fixed** ✅
+   - Fixed `clearUser` function reference issue
+   - Used `useShallow` from zustand for proper store selectors
+   - No more infinite re-render loops
+
+### Test Account Credentials
+```
+Email:    pirate@blackbartsgold.com
+Password: treasure123
+```
+
+### Account Status (Seeded)
+- **Find Limit:** $10.00
+- **Gas Tank:** $15.00 (~45 days)
+- **Parked:** $25.00
+- **Total Balance:** $50.00
+
+### Test Coins Created
+| Value | Distance | Notes |
+|-------|----------|-------|
+| $0.50 | ~38m | Easy to find |
+| $1.00 | ~62m | Easy to find |
+| $2.50 | ~239m | Medium walk |
+| Pool | ~377m | Random value coin |
+| $5.00 | ~658m | Adventure worthy |
+| $10.00 | ~717m | Max find limit |
+| $25.00 | ~120m | **LOCKED** (above limit) |
+
+### Verified Working
+- ✅ App launches on Android emulator
+- ✅ Onboarding screen displays
+- ✅ Login flow works
+- ✅ Session persists
+- ✅ Home screen shows with navigation
+- ✅ Tab navigation (Home, Map, Wallet, Settings)
+- ✅ Backend API running
+
+---
+
+## 🚀 Testing Commands
+
+### Start Metro Bundler
+```bash
+cd C:\Users\Admin\Location-Game
+npx react-native start --reset-cache
+```
+
+### Build & Install on Emulator
+```bash
+# Set Gradle home (fixes Windows cache issues)
+$env:GRADLE_USER_HOME = "C:\gradle-home"
+
+cd android
+.\gradlew assembleDebug --no-daemon
+
+# Install APK
+adb install -r app\build\outputs\apk\debug\app-debug.apk
+
+# Launch app
+adb shell am start -n com.virostarterkit/.MainActivity
+```
+
+### Start Android Emulator
+```bash
+& "$env:LOCALAPPDATA\Android\Sdk\emulator\emulator.exe" -avd Pixel_6_API_33
+```
+
+### View Logs
+```bash
+adb logcat | Select-String -Pattern "ReactNativeJS|BlackBartsGold"
+```
+
+### Start Backend Server
+```bash
+cd backend
+npm run dev
+```
 
 ---
 
@@ -613,5 +781,5 @@ export const useStoreName = create<State & Actions>()(
 
 ---
 
-*Last updated by Claude on January 11, 2026*
+*Last updated by Claude on January 12, 2026*
 
