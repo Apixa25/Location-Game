@@ -9,8 +9,8 @@
 | Item | Value |
 |------|-------|
 | **Project Path** | `C:\Users\Admin\Location-Game` |
-| **Current Sprint** | Sprint 2 Complete ✅ |
-| **Next Sprint** | Sprint 3: Location & GPS System |
+| **Current Sprint** | Sprint 3 Complete ✅ |
+| **Next Sprint** | Sprint 4: Coin System |
 | **Last Updated** | January 11, 2026 |
 
 ---
@@ -75,8 +75,16 @@ src/
 │   ├── useCoinStore.ts   # Nearby coins, selection
 │   ├── useAppStore.ts    # AR state, settings
 │   └── index.ts
-├── services/             # Business logic (Sprint 3+)
-├── hooks/                # Custom React hooks (Sprint 3+)
+├── services/             # Business logic
+│   ├── location.ts       # GPS tracking, distance/bearing
+│   ├── haptics.ts        # Proximity vibration feedback
+│   └── index.ts
+├── hooks/                # Custom React hooks
+│   ├── useLocation.ts    # Location tracking hook
+│   └── index.ts
+├── utils/                # Utility functions
+│   ├── coordinates.ts    # GPS to AR conversion
+│   └── index.ts
 ├── types/                # TypeScript interfaces
 │   ├── coin.ts
 │   ├── user.ts
@@ -191,16 +199,45 @@ ANIMATIONS.VALUE_POPUP    // +$5.00 floating text
 
 ---
 
+### Sprint 3: Location & GPS System ✅
+
+#### 3.1 Location Service (`src/services/location.ts`)
+- Permission handling for iOS and Android
+- `getCurrentPosition()` - Single GPS reading
+- `watchPosition()` - Continuous tracking with callbacks
+- `stopWatching()` / `stopAllWatching()` - Cleanup
+- Haversine formula for distance calculation
+- Bearing calculation with cardinal directions
+- `isWithinRadius()` helper
+
+#### 3.2 Location Hook (`src/hooks/useLocation.ts`)
+- Auto-start tracking on mount
+- Background pause/resume (AppState listener)
+- Distance/bearing to selected coin
+- Automatic store updates
+- Proper cleanup on unmount
+- Options: autoStart, distanceFilter, enableHighAccuracy, pauseInBackground
+
+#### 3.3 Haptics Service (`src/services/haptics.ts`)
+- Proximity zones: far, approaching, close, veryClose, collectible
+- Distance thresholds: 50m, 30m, 15m, 5m
+- `startProximityFeedback()` - Auto-adjusting vibration patterns
+- `triggerCollectionFeedback()` - Success pattern
+- `triggerLockedFeedback()` - Error pattern
+- Respects user settings (hapticEnabled)
+
+#### 3.4 Coordinates Utility (`src/utils/coordinates.ts`)
+- `gpsToARPosition()` - GPS coords → AR [x, y, z]
+- `arPositionToGPS()` - Reverse conversion
+- `getARDistance()` / `getARBearing()` - AR position helpers
+- `convertCoinsToAR()` - Batch conversion with distances
+- `filterCoinsInARRange()` / `sortCoinsByDistance()`
+
+---
+
 ## 🔜 Upcoming Sprints
 
-### Sprint 3: Location & GPS System (NEXT)
-- [ ] `src/services/location.ts` - GPS service
-- [ ] `src/hooks/useLocation.ts` - Location hook
-- [ ] `src/services/haptics.ts` - Vibration feedback
-- [ ] `src/utils/coordinates.ts` - GPS to AR position conversion
-- [ ] Connect real GPS to AR coin positioning
-
-### Sprint 4: Coin System
+### Sprint 4: Coin System (NEXT)
 - [ ] Coin collection logic
 - [ ] Find limit enforcement
 - [ ] Coin hiding flow
