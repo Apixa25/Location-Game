@@ -109,6 +109,28 @@ src/
 │   └── index.ts
 └── navigation/
     └── AppNavigator.tsx  # Tab + Stack navigation
+
+backend/                  # Express API Server
+├── src/
+│   ├── index.ts          # Entry point
+│   ├── app.ts            # Express app setup
+│   ├── config/           # Environment config
+│   ├── routes/           # API routes
+│   │   ├── auth.ts       # Authentication
+│   │   ├── coins.ts      # Coin operations
+│   │   ├── wallet.ts     # Balance & transactions
+│   │   └── users.ts      # User profile & stats
+│   ├── services/         # Business logic
+│   │   └── coinService.ts  # Geospatial queries
+│   ├── middleware/       # Auth, errors
+│   │   ├── auth.ts       # JWT validation
+│   │   └── errorHandler.ts
+│   └── utils/
+│       └── prisma.ts     # DB client
+├── prisma/
+│   └── schema.prisma     # Database schema
+├── package.json
+└── tsconfig.json
 ```
 
 ---
@@ -356,16 +378,72 @@ ANIMATIONS.VALUE_POPUP    // +$5.00 floating text
 - LowGasWarning banner shows when < 5 days
 - Wallet navigation from gas meter
 
+### Sprint 7: Backend API ✅
+
+#### 7.1 Backend Project Setup
+- `backend/` directory with full structure
+- Express + TypeScript configuration
+- `package.json` with all dependencies
+- `tsconfig.json` for strict TypeScript
+- `env.example` with all config vars
+- Config module with validation
+- Health check endpoint at `/health`
+- CORS, Helmet, rate limiting
+
+#### 7.2 Prisma Database Schema (`backend/prisma/schema.prisma`)
+- **User** - Auth, settings, ban status
+- **UserStats** - Find limit, totals
+- **Wallet** - Balance breakdown, gas tracking
+- **Transaction** - Full history with types
+- **Coin** - Location, type, value, status
+- **CoinFind** - Collection records
+- **Grid** - Geographic distribution
+- Enums for CoinType, CoinStatus, etc.
+
+#### 7.3 Core API Routes
+- **Auth** (`/api/v1/auth/*`)
+  - POST `/register` - Create account
+  - POST `/login` - Email/password login
+  - POST `/google` - Google OAuth (stub)
+  - POST `/logout` - Invalidate session
+  - GET `/me` - Current user
+- **Coins** (`/api/v1/coins/*`)
+  - GET `/nearby` - Geospatial query
+  - POST `/hide` - Place new coin
+  - POST `/:id/collect` - Collect coin
+  - DELETE `/:id` - Retrieve own coin
+- **Wallet** (`/api/v1/wallet/*`)
+  - GET `/` - Balance breakdown
+  - GET `/transactions` - History
+  - POST `/park` - Park coins
+  - POST `/unpark` - Unpark coins
+  - POST `/consume-gas` - Daily gas
+  - POST `/confirm-pending` - Confirm 24h
+- **Users** (`/api/v1/users/*`)
+  - GET `/stats` - User statistics
+  - GET/PUT `/settings` - Preferences
+  - GET `/leaderboard` - Top users
+
+#### 7.4 Geospatial Service (`backend/src/services/coinService.ts`)
+- Haversine distance calculation
+- Bearing calculation
+- Grid system (~5km cells)
+- `getCoinsNearLocation()` - Radius query
+- `ensureGridHasCoins()` - Auto-seeding
+- `placeSystemCoin()` - System coin placement
+- `recycleStaleCoins()` - Cleanup inactive grids
+- `calculatePoolCoinValue()` - Slot machine logic
+
+#### 7.5 Middleware
+- JWT authentication with refresh
+- Error handling with ApiError class
+- Validation using express-validator
+
 ---
 
 ## 🔜 Upcoming Sprints
 
-### Sprint 7: Backend API (NEXT)
-- [ ] Express/Node backend
-- [ ] PostgreSQL + PostGIS
-- [ ] Core API endpoints
-
-### Sprint 8: Integration & Polish
+### Sprint 8: Integration & Polish (NEXT)
 - [ ] End-to-end testing
 - [ ] Error handling
 - [ ] Performance optimization

@@ -1,0 +1,282 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// BLACK BART'S GOLD - DATABASE SCHEMA
+// ═══════════════════════════════════════════════════════════════════════════
+// 
+// This schema defines the database structure for the treasure hunting game.
+// Uses PostgreSQL with PostGIS extension for geospatial queries.
+//
+// To apply changes:
+//   npx prisma migrate dev --name <migration_name>
+//   npx prisma generate
+//
+// ═══════════════════════════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// USER MODELS
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// User account
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String?   @map("password_hash")
+  googleId      String?   @unique @map("google_id")
+  age           Int?
+  
+  // Account status
+  isBanned      Boolean   @default(false) @map("is_banned")
+  banReason     String?   @map("ban_reason")
+  
+  // Settings
+  hapticEnabled       Boolean @default(true) @map("haptic_enabled")
+  soundEnabled        Boolean @default(true) @map("sound_enabled")
+  notificationsEnabled Boolean @default(true) @map("notifications_enabled")
+  
+  // Timestamps
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  lastLoginAt   DateTime? @map("last_login_at")
+  
+  // Device tracking (for fraud prevention)
+  deviceIds     String[]  @map("device_ids")
+  
+  // Relations
+  stats         UserStats?
+  wallet        Wallet?
+  coinsHidden   Coin[]        @relation("HiddenCoins")
+  coinsFound    CoinFind[]
+  transactions  Transaction[]
+  
+  @@map("users")
+}
+
+/// User statistics
+model UserStats {
+  id                  String  @id @default(uuid())
+  userId              String  @unique @map("user_id")
+  
+  // Finding limit (based on highest contribution)
+  findLimit           Float   @default(1.0) @map("find_limit")
+  
+  // Cumulative stats
+  totalFoundCount     Int     @default(0) @map("total_found_count")
+  totalFoundValue     Float   @default(0) @map("total_found_value")
+  totalHiddenCount    Int     @default(0) @map("total_hidden_count")
+  totalHiddenValue    Float   @default(0) @map("total_hidden_value")
+  highestHiddenValue  Float   @default(0) @map("highest_hidden_value")
+  
+  // Relations
+  user                User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("user_stats")
+}
+
+/// User wallet for BBG balance
+model Wallet {
+  id            String    @id @default(uuid())
+  userId        String    @unique @map("user_id")
+  
+  // Balance breakdown
+  totalBalance  Float     @default(0) @map("total_balance")
+  gasTank       Float     @default(0) @map("gas_tank")
+  parked        Float     @default(0)
+  pending       Float     @default(0)
+  
+  // Gas tracking
+  lastGasCharge DateTime? @map("last_gas_charge")
+  
+  // Timestamps
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("wallets")
+}
+
+/// Financial transaction record
+model Transaction {
+  id          String            @id @default(uuid())
+  userId      String            @map("user_id")
+  type        TransactionType
+  amount      Float             // Positive for income, negative for expense
+  coinId      String?           @map("coin_id")
+  status      TransactionStatus @default(pending)
+  description String?
+  
+  // Timestamps
+  createdAt   DateTime          @default(now()) @map("created_at")
+  
+  // Relations
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coin        Coin?             @relation(fields: [coinId], references: [id], onDelete: SetNull)
+  
+  @@index([userId, createdAt])
+  @@map("transactions")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// COIN MODELS
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// A coin placed in the world
+model Coin {
+  id              String     @id @default(uuid())
+  coinType        CoinType   @map("coin_type")
+  
+  // Value
+  value           Float?     // Null for pool coins (determined at collection)
+  contribution    Float      // Amount hider put in
+  
+  // Location (will use PostGIS in production)
+  latitude        Float
+  longitude       Float
+  
+  // Ownership
+  hiderId         String     @map("hider_id")
+  hiddenAt        DateTime   @default(now()) @map("hidden_at")
+  
+  // Branding
+  logoFrontUrl    String?    @map("logo_front_url")
+  logoBackUrl     String?    @map("logo_back_url")
+  
+  // Hunt configuration
+  huntType        HuntType   @default(direct_navigation) @map("hunt_type")
+  
+  // Multi-find coins
+  multiFindEnabled Boolean   @default(false) @map("multi_find_enabled")
+  findsRemaining   Int?      @map("finds_remaining")
+  currentTier      CoinTier? @map("current_tier")
+  
+  // Status
+  status          CoinStatus @default(hidden)
+  
+  // Timestamps
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+  
+  // Relations
+  hider           User       @relation("HiddenCoins", fields: [hiderId], references: [id])
+  finds           CoinFind[]
+  transactions    Transaction[]
+  
+  @@index([latitude, longitude])
+  @@index([status])
+  @@index([hiderId])
+  @@map("coins")
+}
+
+/// Record of a coin being found
+model CoinFind {
+  id            String        @id @default(uuid())
+  coinId        String        @map("coin_id")
+  finderId      String        @map("finder_id")
+  
+  // Value received (may differ from coin value for pool coins)
+  valueReceived Float         @map("value_received")
+  tier          CoinTier?
+  
+  // Status
+  status        FindStatus    @default(pending)
+  
+  // Timestamps
+  foundAt       DateTime      @default(now()) @map("found_at")
+  confirmedAt   DateTime?     @map("confirmed_at")
+  
+  // Relations
+  coin          Coin          @relation(fields: [coinId], references: [id], onDelete: Cascade)
+  finder        User          @relation(fields: [finderId], references: [id], onDelete: Cascade)
+  
+  @@index([finderId, foundAt])
+  @@index([coinId])
+  @@map("coin_finds")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GRID SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Geographic grid for coin distribution
+model Grid {
+  id            String    @id @default(uuid())
+  
+  // Grid center coordinates
+  latitude      Float
+  longitude     Float
+  
+  // Activity tracking
+  activeUsers   Int       @default(0) @map("active_users")
+  coinCount     Int       @default(0) @map("coin_count")
+  lastActivity  DateTime? @map("last_activity")
+  
+  // Timestamps
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  @@unique([latitude, longitude])
+  @@index([lastActivity])
+  @@map("grids")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ENUMS
+// ═══════════════════════════════════════════════════════════════════════════
+
+enum CoinType {
+  fixed
+  pool
+}
+
+enum CoinStatus {
+  hidden      // Just placed, not yet visible
+  visible     // Available for collection
+  collected   // Being processed
+  confirmed   // Collection verified
+}
+
+enum CoinTier {
+  gold
+  silver
+  bronze
+}
+
+enum HuntType {
+  direct_navigation
+  geo_reveal
+  clue_based
+  ar_hunt
+}
+
+enum TransactionType {
+  found
+  hidden
+  gas_consumed
+  purchased
+  parked
+  unparked
+  transfer_in
+  transfer_out
+  refund
+}
+
+enum TransactionStatus {
+  pending
+  confirmed
+  failed
+}
+
+enum FindStatus {
+  pending
+  confirmed
+  disputed
+}
+
