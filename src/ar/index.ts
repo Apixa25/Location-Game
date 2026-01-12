@@ -19,7 +19,8 @@ export type { AnimationName } from './animations';
 // export { PrizeFinderScene } from './PrizeFinderScene';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// AR COMPONENTS (to be added in Sprint 2.3+)
+// AR COMPONENTS
 // ═══════════════════════════════════════════════════════════════════════════
-// export { CoinObject } from './CoinObject';
+export { CoinObject, ValuePopup } from './CoinObject';
+export type { CoinObjectProps, ValuePopupProps } from './CoinObject';
 
