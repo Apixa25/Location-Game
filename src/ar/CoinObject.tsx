@@ -23,15 +23,20 @@ import type { CoinType, CoinTier } from '../types';
 /**
  * Sound file paths
  * Note: These are placeholder paths - actual audio files need to be added
+ * TODO: Add actual audio files to assets/audio/ folder
  */
-const SOUNDS = {
-  // Collection sound - coin pickup
-  collect: require('../../assets/audio/coin-collect.mp3'),
-  // Black Bart congratulation
-  congratulate: require('../../assets/audio/blackbart-congrats.mp3'),
-  // Locked coin error sound
-  locked: require('../../assets/audio/coin-locked.mp3'),
-};
+// Sound files temporarily disabled until audio assets are added
+// const SOUNDS = {
+//   // Collection sound - coin pickup
+//   collect: require('../../assets/audio/coin-collect.mp3'),
+//   // Black Bart congratulation
+//   congratulate: require('../../assets/audio/blackbart-congrats.mp3'),
+//   // Locked coin error sound
+//   locked: require('../../assets/audio/coin-locked.mp3'),
+// };
+
+// Placeholder for when sounds are disabled
+const SOUNDS: Record<string, any> = {};
 
 // Flag to disable sounds if assets are missing (for development)
 const SOUNDS_ENABLED = false; // Set to true when audio files are added

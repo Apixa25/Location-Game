@@ -111,6 +111,7 @@ dependencies {
     // implementation("com.facebook.react:flipper-integration")
 
     // ========================================================================
+    // ViroReact AR - manual dependencies
     // https://viro-community.readme.io/docs/installation-instructions#2-in-your-androidappbuildgradle-add-the-following-lines-to-the-dependencies-section
     implementation project(':gvr_common')
     implementation project(':arcore_client')
@@ -121,7 +122,18 @@ dependencies {
     implementation 'androidx.media3:media3-exoplayer-hls:1.1.1'
     implementation 'androidx.media3:media3-exoplayer-smoothstreaming:1.1.1'
     implementation 'com.google.protobuf.nano:protobuf-javanano:3.1.0'
-    implementation 'com.google.protobuf.nano:protobuf-javanano:3.1.0'
+    // ========================================================================
+
+    // ========================================================================
+    // Autolinked native modules - added manually because autolinking isn't 
+    // properly adding them in RN 0.81 with ViroReact configuration
+    implementation project(':react-native-async-storage_async-storage')
+    implementation project(':react-native-community_netinfo')
+    implementation project(':react-native-geolocation-service')
+    implementation project(':react-native-haptic-feedback')
+    implementation project(':react-native-permissions')
+    implementation project(':react-native-safe-area-context')
+    implementation project(':react-native-screens')
     // ========================================================================
     
     if (hermesEnabled.toBoolean()) {
@@ -131,4 +143,5 @@ dependencies {
     }
 }
 
-// Native modules are now handled automatically by the React Native Gradle Plugin in RN 0.81+
+// Note: Native modules are manually added above because the autolinking 
+// doesn't work correctly with ViroReact's custom settings.gradle configuration
