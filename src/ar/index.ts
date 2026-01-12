@@ -14,9 +14,9 @@ export {
 export type { AnimationName } from './animations';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SCENES (to be added in Sprint 2.3+)
+// SCENES
 // ═══════════════════════════════════════════════════════════════════════════
-// export { PrizeFinderScene } from './PrizeFinderScene';
+export { PrizeFinderScene } from './PrizeFinderScene';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // AR COMPONENTS
