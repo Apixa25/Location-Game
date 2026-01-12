@@ -9,8 +9,8 @@
 | Item | Value |
 |------|-------|
 | **Project Path** | `C:\Users\Admin\Location-Game` |
-| **Current Sprint** | Sprint 4 Complete ✅ |
-| **Next Sprint** | Sprint 5: User Authentication |
+| **Current Sprint** | Sprint 5 Complete ✅ |
+| **Next Sprint** | Sprint 6: Wallet & Economy |
 | **Last Updated** | January 11, 2026 |
 
 ---
@@ -55,7 +55,12 @@ src/
 │   ├── HideCoinScreen.tsx      # Coin hiding wizard
 │   ├── MapScreen.tsx
 │   ├── WalletScreen.tsx
-│   └── SettingsScreen.tsx
+│   ├── SettingsScreen.tsx
+│   └── auth/                   # Authentication screens
+│       ├── OnboardingScreen.tsx
+│       ├── LoginScreen.tsx
+│       ├── RegisterScreen.tsx
+│       └── index.ts
 ├── ar/                   # ViroReact AR components
 │   ├── animations.ts     # All registered animations
 │   ├── CoinObject.tsx    # 3D coin component
@@ -82,9 +87,11 @@ src/
 │   ├── haptics.ts        # Proximity vibration feedback
 │   ├── coinService.ts    # Collection & hiding logic
 │   ├── findLimitService.ts  # Find limit tiers & messaging
+│   ├── authService.ts    # Auth, session management
 │   └── index.ts
 ├── hooks/                # Custom React hooks
 │   ├── useLocation.ts    # Location tracking hook
+│   ├── useAuth.ts        # Auth state & session
 │   └── index.ts
 ├── utils/                # Utility functions
 │   ├── coordinates.ts    # GPS to AR conversion
@@ -273,16 +280,37 @@ ANIMATIONS.VALUE_POPUP    // +$5.00 floating text
 - Sound enabled flag (for development without audio files)
 - Particle effects commented out (needs texture asset)
 
+### Sprint 5: User Authentication ✅
+
+#### 5.1 Auth Service (`src/services/authService.ts`)
+- Email validation, password strength checking
+- `register()` - Create new account with validation
+- `login()` - Email/password authentication
+- `loginWithGoogle()` - Google OAuth (stub for production)
+- `logout()` - Clear session
+- Session management with AsyncStorage
+- `getCurrentUser()` - Restore session on app launch
+- 30-day session duration
+
+#### 5.2 Auth Screens (`src/screens/auth/`)
+- `OnboardingScreen.tsx` - Welcome with branding, "How It Works" dropdown
+- `LoginScreen.tsx` - Email/password form, Google button, validation
+- `RegisterScreen.tsx` - Full registration with age selector, terms checkbox
+- Pirate-themed UI with gold accents
+
+#### 5.3 Protected Routes & Session
+- `useAuth.ts` hook - Auth state, auto session check
+- Updated `AppNavigator.tsx` with auth flow
+- Loading screen during session check
+- AuthStack (Onboarding → Login → Register)
+- MainStack (TabNavigator + PrizeFinder + HideCoin modals)
+- Session persists across app restarts
+
 ---
 
 ## 🔜 Upcoming Sprints
 
-### Sprint 5: User Authentication (NEXT)
-- [ ] Auth service
-- [ ] Login/Register screens
-- [ ] Protected routes
-
-### Sprint 6: Wallet & Economy
+### Sprint 6: Wallet & Economy (NEXT)
 - [ ] Wallet service
 - [ ] Gas system
 - [ ] Transaction history

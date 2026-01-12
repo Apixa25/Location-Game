@@ -85,3 +85,30 @@ export type {
   FindLimitHistoryEntry,
 } from './findLimitService';
 
+// ═══════════════════════════════════════════════════════════════════════════
+// AUTH SERVICE
+// ═══════════════════════════════════════════════════════════════════════════
+export {
+  isValidEmail,
+  validatePassword,
+  isValidAge,
+  register,
+  login,
+  loginWithGoogle,
+  logout,
+  storeSession,
+  clearSession,
+  getCurrentUser,
+  isAuthenticated,
+  getAuthToken,
+  refreshUserData,
+  authService,
+} from './authService';
+export type {
+  RegisterData,
+  LoginCredentials,
+  AuthResult,
+  AuthError,
+  PasswordValidation,
+} from './authService';
+
