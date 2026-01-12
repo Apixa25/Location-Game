@@ -107,7 +107,8 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
-    implementation("com.facebook.react:flipper-integration")
+    // Flipper is optional for debugging - removing due to version conflicts
+    // implementation("com.facebook.react:flipper-integration")
 
     // ========================================================================
     // https://viro-community.readme.io/docs/installation-instructions#2-in-your-androidappbuildgradle-add-the-following-lines-to-the-dependencies-section
@@ -130,4 +131,4 @@ dependencies {
     }
 }
 
-apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)
+// Native modules are now handled automatically by the React Native Gradle Plugin in RN 0.81+
