@@ -1,22 +1,18 @@
 // PrizeFinderScreen - AR Treasure Hunt View
 // Main screen for finding and collecting coins
 //
-// Reference: docs/BUILD-GUIDE.md - Sprint 2.4 & 2.5/2.6
+// Reference: docs/BUILD-GUIDE.md - Sprint 2.5/2.6
 // Reference: docs/prize-finder-details.md - HUD Layout
 
-import React, { useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-} from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ViroARSceneNavigator } from '@reactvision/react-viro';
 import { PrizeFinderScene } from '../ar/PrizeFinderScene';
-import { useUserStore, useAppStore } from '../store';
-import type { ARTrackingState } from '../types';
+import { PrizeFinderHUD } from '../components/ui';
+import { useUserStore, useLocationStore } from '../store';
+import type { ARTrackingState, Coordinates } from '../types';
+import type { MiniMapCoin } from '../components/ui';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // COMPONENT
@@ -32,27 +28,37 @@ export const PrizeFinderScreen: React.FC = () => {
   // Tracking state from AR scene
   const [trackingState, setTrackingState] = useState<ARTrackingState>('UNAVAILABLE');
 
-  // Currently hovered coin (for crosshairs color)
+  // Currently hovered coin (for crosshairs)
   const [hoveredCoinId, setHoveredCoinId] = useState<string | null>(null);
 
   // Coins collected this session (for feedback)
   const [coinsCollectedCount, setCoinsCollectedCount] = useState(0);
   const [totalValueCollected, setTotalValueCollected] = useState(0);
 
+  // Nearby coins for mini map (will be updated from AR scene in future)
+  const [nearbyCoins, setNearbyCoins] = useState<MiniMapCoin[]>([
+    // Mock data for testing - will come from AR scene
+    { id: 'test-coin-1', position: { latitude: 37.7750, longitude: -122.4195 }, coinType: 'fixed' },
+    { id: 'test-coin-2', position: { latitude: 37.7748, longitude: -122.4190 }, coinType: 'fixed' },
+    { id: 'test-coin-3', position: { latitude: 37.7752, longitude: -122.4200 }, coinType: 'pool' },
+  ]);
+
   // ─────────────────────────────────────────────────────────────────────────
   // STORE DATA
   // ─────────────────────────────────────────────────────────────────────────
 
   // User economy data
-  const { gasRemaining, findLimit, bbgBalance } = useUserStore((state) => ({
-    gasRemaining: state.gasRemaining,
-    findLimit: state.findLimit,
-    bbgBalance: state.bbgBalance,
-  }));
-
-  // Update balance when coin is collected
   const addToBalance = useUserStore((state) => state.addToBalance);
   const incrementCoinsFound = useUserStore((state) => state.incrementCoinsFound);
+
+  // Location data
+  const currentLocation = useLocationStore((state) => state.currentLocation);
+
+  // Mock player position for testing (will use real GPS later)
+  const playerPosition: Coordinates = currentLocation ?? {
+    latitude: 37.7749,
+    longitude: -122.4194,
+  };
 
   // ─────────────────────────────────────────────────────────────────────────
   // CALLBACKS
@@ -80,6 +86,9 @@ export const PrizeFinderScreen: React.FC = () => {
       addToBalance(value);
       incrementCoinsFound(value);
 
+      // Remove from mini map
+      setNearbyCoins((prev) => prev.filter((c) => c.id !== coinId));
+
       // TODO: Play sound effect
       // TODO: Trigger haptic feedback
     },
@@ -93,22 +102,56 @@ export const PrizeFinderScreen: React.FC = () => {
     setHoveredCoinId(coinId);
   }, []);
 
+  /**
+   * Handle close button
+   */
+  const handleClose = useCallback(() => {
+    navigation.goBack();
+  }, [navigation]);
+
+  /**
+   * Handle mini map press
+   */
+  const handleMiniMapPress = useCallback(() => {
+    // @ts-ignore - navigation type
+    navigation.navigate('Map');
+  }, [navigation]);
+
+  /**
+   * Handle gas meter press
+   */
+  const handleGasMeterPress = useCallback(() => {
+    // @ts-ignore - navigation type
+    navigation.navigate('Wallet');
+  }, [navigation]);
+
   // ─────────────────────────────────────────────────────────────────────────
   // COMPUTED VALUES
   // ─────────────────────────────────────────────────────────────────────────
 
-  // Crosshairs color based on hover state
-  const crosshairsColor = hoveredCoinId ? '#4ADE80' : '#FFD700'; // Green when targeting, gold otherwise
+  // Calculate direction to nearest coin (mock for now)
+  const directionToTarget = useMemo(() => {
+    if (!hoveredCoinId) return null;
+    // In real implementation, calculate bearing from GPS positions
+    return 45; // Mock: 45 degrees (northeast)
+  }, [hoveredCoinId]);
 
-  // Gas meter fill percentage
-  const gasPercentage = Math.min(100, Math.max(0, (gasRemaining / 30) * 100));
+  // Calculate distance to nearest coin (mock for now)
+  const distanceToTarget = useMemo(() => {
+    if (!hoveredCoinId) return null;
+    // In real implementation, calculate from GPS positions
+    return 25; // Mock: 25 meters
+  }, [hoveredCoinId]);
 
-  // Gas meter color (green -> yellow -> red based on level)
-  const gasMeterColor =
-    gasPercentage > 30 ? '#4ADE80' : gasPercentage > 15 ? '#FBBF24' : '#EF4444';
-
-  // Show low gas warning
-  const isLowGas = gasPercentage <= 15;
+  // Memoize viroAppProps to prevent re-renders
+  const viroAppProps = useMemo(
+    () => ({
+      onTrackingStateChange: handleTrackingStateChange,
+      onCoinCollected: handleCoinCollected,
+      onCoinHovered: handleCoinHovered,
+    }),
+    [handleTrackingStateChange, handleCoinCollected, handleCoinHovered]
+  );
 
   // ─────────────────────────────────────────────────────────────────────────
   // RENDER
@@ -122,107 +165,31 @@ export const PrizeFinderScreen: React.FC = () => {
       <ViroARSceneNavigator
         autofocus={true}
         initialScene={{
-          scene: PrizeFinderScene,
+          scene: PrizeFinderScene as () => React.JSX.Element,
         }}
-        viroAppProps={{
-          onTrackingStateChange: handleTrackingStateChange,
-          onCoinCollected: handleCoinCollected,
-          onCoinHovered: handleCoinHovered,
-        }}
+        viroAppProps={viroAppProps}
         style={styles.arView}
       />
 
       {/* ───────────────────────────────────────────────────────────────────── */}
       {/* HUD OVERLAY */}
       {/* ───────────────────────────────────────────────────────────────────── */}
-      <SafeAreaView style={styles.hudOverlay} pointerEvents="box-none">
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* TOP BAR */}
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        <View style={styles.topBar}>
-          {/* Close Button */}
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.closeButtonText}>✕</Text>
-          </TouchableOpacity>
-
-          {/* Session Stats (center) */}
-          {coinsCollectedCount > 0 && (
-            <View style={styles.sessionStats}>
-              <Text style={styles.sessionStatsText}>
-                🪙 {coinsCollectedCount} | +${totalValueCollected.toFixed(2)}
-              </Text>
-            </View>
-          )}
-
-          {/* Find Limit (right) */}
-          <View style={styles.findLimit}>
-            <Text style={styles.findLimitText}>
-              Find: ${findLimit.toFixed(2)}
-            </Text>
-          </View>
-        </View>
-
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* CENTER - CROSSHAIRS */}
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        <View style={styles.crosshairsContainer}>
-          <Text style={[styles.crosshairs, { color: crosshairsColor }]}>⊕</Text>
-          {/* Targeting indicator */}
-          {hoveredCoinId && (
-            <Text style={styles.targetingText}>TAP TO COLLECT</Text>
-          )}
-        </View>
-
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* BOTTOM BAR */}
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        <View style={styles.bottomBar}>
-          {/* Compass (left) */}
-          <View style={styles.compass}>
-            <Text style={styles.compassIcon}>🧭</Text>
-            <Text style={styles.compassText}>N</Text>
-          </View>
-
-          {/* Balance Display (center) */}
-          <View style={styles.balanceDisplay}>
-            <Text style={styles.balanceLabel}>Balance</Text>
-            <Text style={styles.balanceValue}>${bbgBalance.toFixed(2)}</Text>
-          </View>
-
-          {/* Gas Meter (right) */}
-          <View style={styles.gasMeter}>
-            <Text style={styles.gasMeterLabel}>
-              {isLowGas ? '⚠️ LOW' : 'Gas'}
-            </Text>
-            <View style={styles.gasMeterBar}>
-              <View
-                style={[
-                  styles.gasMeterFill,
-                  {
-                    height: `${gasPercentage}%`,
-                    backgroundColor: gasMeterColor,
-                  },
-                ]}
-              />
-            </View>
-            <Text style={styles.gasMeterValue}>{Math.floor(gasRemaining)}d</Text>
-          </View>
-        </View>
-
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* TRACKING WARNING BANNER */}
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {trackingState === 'LIMITED' && (
-          <View style={styles.warningBanner}>
-            <Text style={styles.warningText}>
-              ⚠️ AR tracking limited - move to a better area
-            </Text>
-          </View>
-        )}
-      </SafeAreaView>
+      <PrizeFinderHUD
+        trackingState={trackingState}
+        playerPosition={playerPosition}
+        hoveredCoinId={hoveredCoinId}
+        isHoveredCoinLocked={false}
+        isHoveredCoinOutOfRange={false}
+        directionToTarget={directionToTarget}
+        distanceToTarget={distanceToTarget}
+        nearbyCoins={nearbyCoins}
+        selectedCoinId={hoveredCoinId}
+        coinsCollectedCount={coinsCollectedCount}
+        totalValueCollected={totalValueCollected}
+        onClose={handleClose}
+        onMiniMapPress={handleMiniMapPress}
+        onGasMeterPress={handleGasMeterPress}
+      />
     </View>
   );
 };
@@ -239,169 +206,6 @@ const styles = StyleSheet.create({
   arView: {
     flex: 1,
   },
-
-  // HUD Overlay
-  hudOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-
-  // Top Bar
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingTop: 10,
-  },
-  closeButton: {
-    width: 44,
-    height: 44,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  closeButtonText: {
-    fontSize: 24,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-  },
-  sessionStats: {
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-  },
-  sessionStatsText: {
-    fontSize: 14,
-    color: '#4ADE80',
-    fontWeight: 'bold',
-  },
-  findLimit: {
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  findLimitText: {
-    fontSize: 16,
-    color: '#FFD700',
-    fontWeight: 'bold',
-  },
-
-  // Crosshairs
-  crosshairsContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  crosshairs: {
-    fontSize: 60,
-    opacity: 0.8,
-  },
-  targetingText: {
-    marginTop: 10,
-    fontSize: 14,
-    color: '#4ADE80',
-    fontWeight: 'bold',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-
-  // Bottom Bar
-  bottomBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    paddingHorizontal: 15,
-    paddingBottom: 20,
-  },
-  compass: {
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  compassIcon: {
-    fontSize: 24,
-  },
-  compassText: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-  },
-  balanceDisplay: {
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 15,
-    alignItems: 'center',
-  },
-  balanceLabel: {
-    fontSize: 10,
-    color: '#8B9DC3',
-  },
-  balanceValue: {
-    fontSize: 18,
-    color: '#FFD700',
-    fontWeight: 'bold',
-  },
-  gasMeter: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    padding: 8,
-    borderRadius: 10,
-  },
-  gasMeterLabel: {
-    fontSize: 10,
-    color: '#8B9DC3',
-    marginBottom: 4,
-  },
-  gasMeterBar: {
-    width: 20,
-    height: 60,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 10,
-    overflow: 'hidden',
-    justifyContent: 'flex-end',
-  },
-  gasMeterFill: {
-    width: '100%',
-    borderRadius: 10,
-  },
-  gasMeterValue: {
-    fontSize: 10,
-    color: '#FFFFFF',
-    marginTop: 4,
-    fontWeight: 'bold',
-  },
-
-  // Warning Banner
-  warningBanner: {
-    position: 'absolute',
-    bottom: 100,
-    left: 20,
-    right: 20,
-    backgroundColor: 'rgba(251, 191, 36, 0.9)',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  warningText: {
-    fontSize: 14,
-    color: '#1A365D',
-    fontWeight: 'bold',
-  },
 });
 
 export default PrizeFinderScreen;
-
