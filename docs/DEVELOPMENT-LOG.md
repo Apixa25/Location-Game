@@ -75,6 +75,8 @@ src/
 │       ├── MiniMap.tsx
 │       ├── GasMeter.tsx
 │       ├── PrizeFinderHUD.tsx
+│       ├── NoGasScreen.tsx     # Empty gas overlay
+│       ├── LowGasWarning.tsx   # Low gas banner
 │       └── index.ts
 ├── store/                # Zustand state stores
 │   ├── useUserStore.ts   # Auth, balance, gas, find limit
@@ -88,6 +90,8 @@ src/
 │   ├── coinService.ts    # Collection & hiding logic
 │   ├── findLimitService.ts  # Find limit tiers & messaging
 │   ├── authService.ts    # Auth, session management
+│   ├── walletService.ts  # Balance, transactions, parking
+│   ├── gasService.ts     # Gas consumption & warnings
 │   └── index.ts
 ├── hooks/                # Custom React hooks
 │   ├── useLocation.ts    # Location tracking hook
@@ -306,16 +310,57 @@ ANIMATIONS.VALUE_POPUP    // +$5.00 floating text
 - MainStack (TabNavigator + PrizeFinder + HideCoin modals)
 - Session persists across app restarts
 
+### Sprint 6: Wallet & Economy ✅
+
+#### 6.1 Wallet Service (`src/services/walletService.ts`)
+- `getBalance()` - Returns balance breakdown (total, gas_tank, parked, pending)
+- `getTransactions()` - Transaction history with pagination
+- `addTransaction()` - Record new transactions
+- `parkCoins()` - Move found coins to protected storage
+- `unparkCoins()` - Move parked coins to gas (with $0.33 fee)
+- `consumeGas()` - Daily gas consumption
+- `confirmPendingCoins()` - Confirm coins after 24h verification
+- Transaction helpers (icons, colors, relative time formatting)
+
+#### 6.2 Wallet Screen (`src/screens/WalletScreen.tsx`)
+- Total balance header with gold styling
+- Gas tank section with progress bar and days remaining
+- Balance breakdown cards (Parked, Pending)
+- Action buttons (Park Coins, Add Gas, Unpark)
+- Park/Unpark modal with amount input
+- Transaction history list with status badges
+- Pull-to-refresh functionality
+- Empty state for new users
+
+#### 6.3 Gas Service (`src/services/gasService.ts`)
+- `getDetailedGasStatus()` - Extended status with UI fields
+- `checkGasOnLaunch()` - Check and consume gas on app start
+- `checkAndConsumeGas()` - Daily consumption logic
+- Notification scheduling (stub for push notifications)
+- Warning dismissal management
+- Gas meter color/message helpers
+
+#### 6.4 Gas UI Components
+- `NoGasScreen.tsx` - Full overlay when empty
+  - Animated ship bobbing
+  - "Ye've Run Aground!" messaging
+  - Buy Gas / Unpark Coins options
+- `LowGasWarning.tsx` - Top banner when low
+  - Flashing "LOW FUEL" text
+  - Days remaining countdown
+  - Dismissible per session
+
+#### 6.5 PrizeFinderScreen Integration
+- Gas check on mount (loading state)
+- NoGasScreen overlay blocks AR when empty
+- LowGasWarning banner shows when < 5 days
+- Wallet navigation from gas meter
+
 ---
 
 ## 🔜 Upcoming Sprints
 
-### Sprint 6: Wallet & Economy (NEXT)
-- [ ] Wallet service
-- [ ] Gas system
-- [ ] Transaction history
-
-### Sprint 7: Backend API
+### Sprint 7: Backend API (NEXT)
 - [ ] Express/Node backend
 - [ ] PostgreSQL + PostGIS
 - [ ] Core API endpoints

@@ -4,15 +4,27 @@
 // Reference: docs/BUILD-GUIDE.md - Sprint 2.5/2.6
 // Reference: docs/prize-finder-details.md - HUD Layout
 
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ViroARSceneNavigator } from '@reactvision/react-viro';
 import { PrizeFinderScene } from '../ar/PrizeFinderScene';
-import { PrizeFinderHUD } from '../components/ui';
+import { PrizeFinderHUD, NoGasScreen, LowGasWarning } from '../components/ui';
 import { useUserStore, useLocationStore } from '../store';
-import type { ARTrackingState, Coordinates } from '../types';
+import { checkGasOnLaunch, getDetailedGasStatus, ExtendedGasStatus } from '../services/gasService';
+import { getBalance } from '../services/walletService';
+import type { ARTrackingState, Coordinates, GasCheckResult } from '../types';
 import type { MiniMapCoin } from '../components/ui';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+const COLORS = {
+  deepSea: '#1A365D',
+  gold: '#FFD700',
+  white: '#FFFFFF',
+};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // COMPONENT
@@ -20,9 +32,21 @@ import type { MiniMapCoin } from '../components/ui';
 
 export const PrizeFinderScreen: React.FC = () => {
   const navigation = useNavigation();
+  const userId = useUserStore((state) => state.userId) || 'default';
 
   // ─────────────────────────────────────────────────────────────────────────
-  // STATE
+  // GAS STATE
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const [isCheckingGas, setIsCheckingGas] = useState(true);
+  const [_gasCheckResult, setGasCheckResult] = useState<GasCheckResult>('OK');
+  const [gasStatus, setGasStatus] = useState<ExtendedGasStatus | null>(null);
+  const [parkedAmount, setParkedAmount] = useState(0);
+  const [showLowGasWarning, setShowLowGasWarning] = useState(false);
+  const [showNoGasScreen, setShowNoGasScreen] = useState(false);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // AR STATE
   // ─────────────────────────────────────────────────────────────────────────
 
   // Tracking state from AR scene
@@ -59,6 +83,38 @@ export const PrizeFinderScreen: React.FC = () => {
     latitude: 37.7749,
     longitude: -122.4194,
   };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // GAS CHECK ON MOUNT
+  // ─────────────────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    const checkGas = async () => {
+      try {
+        const result = await checkGasOnLaunch(userId);
+        const status = await getDetailedGasStatus(userId);
+        const balance = await getBalance(userId);
+
+        setGasCheckResult(result);
+        setGasStatus(status);
+        setParkedAmount(balance.parked);
+
+        if (result === 'NO_GAS') {
+          setShowNoGasScreen(true);
+        } else if (result === 'LOW_GAS' && !status.warningDismissed) {
+          setShowLowGasWarning(true);
+        }
+      } catch (error) {
+        console.error('[PrizeFinderScreen] Gas check error:', error);
+        // Default to allowing play on error (fail open)
+        setGasCheckResult('OK');
+      } finally {
+        setIsCheckingGas(false);
+      }
+    };
+
+    checkGas();
+  }, [userId]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // CALLBACKS
@@ -122,8 +178,23 @@ export const PrizeFinderScreen: React.FC = () => {
    */
   const handleGasMeterPress = useCallback(() => {
     // @ts-ignore - navigation type
-    navigation.navigate('Wallet');
+    navigation.navigate('MainTabs', { screen: 'Wallet' });
   }, [navigation]);
+
+  /**
+   * Handle NoGasScreen close
+   */
+  const handleNoGasClose = useCallback(() => {
+    setShowNoGasScreen(false);
+    navigation.goBack();
+  }, [navigation]);
+
+  /**
+   * Handle LowGasWarning dismiss
+   */
+  const handleLowGasDismiss = useCallback(() => {
+    setShowLowGasWarning(false);
+  }, []);
 
   // ─────────────────────────────────────────────────────────────────────────
   // COMPUTED VALUES
@@ -154,42 +225,82 @@ export const PrizeFinderScreen: React.FC = () => {
   );
 
   // ─────────────────────────────────────────────────────────────────────────
+  // RENDER: LOADING STATE
+  // ─────────────────────────────────────────────────────────────────────────
+
+  if (isCheckingGas) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.gold} />
+        <Text style={styles.loadingText}>Checking fuel levels...</Text>
+      </View>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <View style={styles.container}>
       {/* ───────────────────────────────────────────────────────────────────── */}
-      {/* AR SCENE */}
+      {/* AR SCENE (only render if has gas) */}
       {/* ───────────────────────────────────────────────────────────────────── */}
-      <ViroARSceneNavigator
-        autofocus={true}
-        initialScene={{
-          scene: PrizeFinderScene as () => React.JSX.Element,
-        }}
-        viroAppProps={viroAppProps}
-        style={styles.arView}
-      />
+      {!showNoGasScreen && (
+        <ViroARSceneNavigator
+          autofocus={true}
+          initialScene={{
+            scene: PrizeFinderScene as () => React.JSX.Element,
+          }}
+          viroAppProps={viroAppProps}
+          style={styles.arView}
+        />
+      )}
 
       {/* ───────────────────────────────────────────────────────────────────── */}
-      {/* HUD OVERLAY */}
+      {/* HUD OVERLAY (only show if not on NoGas screen) */}
       {/* ───────────────────────────────────────────────────────────────────── */}
-      <PrizeFinderHUD
-        trackingState={trackingState}
-        playerPosition={playerPosition}
-        hoveredCoinId={hoveredCoinId}
-        isHoveredCoinLocked={false}
-        isHoveredCoinOutOfRange={false}
-        directionToTarget={directionToTarget}
-        distanceToTarget={distanceToTarget}
-        nearbyCoins={nearbyCoins}
-        selectedCoinId={hoveredCoinId}
-        coinsCollectedCount={coinsCollectedCount}
-        totalValueCollected={totalValueCollected}
-        onClose={handleClose}
-        onMiniMapPress={handleMiniMapPress}
-        onGasMeterPress={handleGasMeterPress}
-      />
+      {!showNoGasScreen && (
+        <PrizeFinderHUD
+          trackingState={trackingState}
+          playerPosition={playerPosition}
+          hoveredCoinId={hoveredCoinId}
+          isHoveredCoinLocked={false}
+          isHoveredCoinOutOfRange={false}
+          directionToTarget={directionToTarget}
+          distanceToTarget={distanceToTarget}
+          nearbyCoins={nearbyCoins}
+          selectedCoinId={hoveredCoinId}
+          coinsCollectedCount={coinsCollectedCount}
+          totalValueCollected={totalValueCollected}
+          onClose={handleClose}
+          onMiniMapPress={handleMiniMapPress}
+          onGasMeterPress={handleGasMeterPress}
+        />
+      )}
+
+      {/* ───────────────────────────────────────────────────────────────────── */}
+      {/* LOW GAS WARNING BANNER */}
+      {/* ───────────────────────────────────────────────────────────────────── */}
+      {showLowGasWarning && gasStatus && (
+        <LowGasWarning
+          daysRemaining={gasStatus.days_left}
+          gasRemaining={gasStatus.remaining}
+          onDismiss={handleLowGasDismiss}
+          visible={showLowGasWarning}
+        />
+      )}
+
+      {/* ───────────────────────────────────────────────────────────────────── */}
+      {/* NO GAS SCREEN OVERLAY */}
+      {/* ───────────────────────────────────────────────────────────────────── */}
+      {showNoGasScreen && (
+        <NoGasScreen
+          onClose={handleNoGasClose}
+          hasParkedCoins={parkedAmount > 0}
+          parkedAmount={parkedAmount}
+        />
+      )}
     </View>
   );
 };
@@ -205,6 +316,18 @@ const styles = StyleSheet.create({
   },
   arView: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.deepSea,
+  },
+  loadingText: {
+    marginTop: 15,
+    color: COLORS.gold,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

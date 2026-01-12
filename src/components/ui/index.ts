@@ -24,3 +24,13 @@ export type { PrizeFinderHUDProps } from './PrizeFinderHUD';
 
 export { FindLimitPopup } from './FindLimitPopup';
 export type { FindLimitPopupProps } from './FindLimitPopup';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GAS SYSTEM COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+export { NoGasScreen } from './NoGasScreen';
+export type { NoGasScreenProps } from './NoGasScreen';
+
+export { LowGasWarning } from './LowGasWarning';
+export type { LowGasWarningProps } from './LowGasWarning';

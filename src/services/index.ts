@@ -112,3 +112,51 @@ export type {
   PasswordValidation,
 } from './authService';
 
+// ═══════════════════════════════════════════════════════════════════════════
+// WALLET SERVICE
+// ═══════════════════════════════════════════════════════════════════════════
+export {
+  DAILY_GAS_RATE,
+  LOW_GAS_THRESHOLD,
+  MONTHLY_GAS_AMOUNT,
+  PENDING_CONFIRMATION_HOURS,
+  getBalance,
+  updateBalance,
+  addGas,
+  addPendingCoins,
+  getTransactions,
+  addTransaction,
+  updateTransactionStatus,
+  parkCoins,
+  unparkCoins,
+  consumeGas,
+  canPlay,
+  getGasStatus,
+  checkGasOnLaunch,
+  confirmPendingCoins,
+  getTransactionIcon,
+  formatTransactionAmount,
+  getTransactionColor,
+  formatRelativeTime,
+  simulatePurchase,
+  clearWalletData,
+} from './walletService';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GAS SERVICE
+// ═══════════════════════════════════════════════════════════════════════════
+export {
+  getDetailedGasStatus,
+  checkGasOnLaunch as checkGasOnLaunchDetailed,
+  checkAndConsumeGas,
+  scheduleGasNotification,
+  clearGasNotification,
+  dismissGasWarning,
+  resetGasWarning,
+  getGasMeterColor,
+  getGasMessage,
+  formatGasDisplay,
+  gasService,
+} from './gasService';
+export type { ExtendedGasStatus } from './gasService';
+
