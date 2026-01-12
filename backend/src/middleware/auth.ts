@@ -152,7 +152,7 @@ export function generateToken(userId: string, email: string): string {
   return jwt.sign(
     { userId, email },
     config.jwt.secret,
-    { expiresIn: config.jwt.expiresIn }
+    { expiresIn: '30d' }  // Use string literal for compatibility
   );
 }
 

@@ -37,11 +37,13 @@ function getOptionalEnvVar(key: string, defaultValue: string): string {
 /**
  * Parse boolean environment variable
  */
-function getBoolEnvVar(key: string, defaultValue: boolean): boolean {
+function _getBoolEnvVar(key: string, defaultValue: boolean): boolean {
   const value = process.env[key];
   if (value === undefined) return defaultValue;
   return value.toLowerCase() === 'true';
 }
+// Exported for future use
+export const getBoolEnvVar = _getBoolEnvVar;
 
 /**
  * Parse number environment variable
