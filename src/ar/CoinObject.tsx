@@ -9,11 +9,32 @@ import {
   ViroNode,
   ViroBox,
   ViroText,
-  ViroParticleEmitter,
+  // ViroParticleEmitter, // TODO: Enable when particle texture is added
   ViroMaterials,
+  ViroSound,
 } from '@reactvision/react-viro';
-import { ANIMATIONS, ANIMATION_DURATIONS } from './animations';
+import { ANIMATIONS } from './animations';
 import type { CoinType, CoinTier } from '../types';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SOUND CONFIGURATION
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Sound file paths
+ * Note: These are placeholder paths - actual audio files need to be added
+ */
+const SOUNDS = {
+  // Collection sound - coin pickup
+  collect: require('../../assets/audio/coin-collect.mp3'),
+  // Black Bart congratulation
+  congratulate: require('../../assets/audio/blackbart-congrats.mp3'),
+  // Locked coin error sound
+  locked: require('../../assets/audio/coin-locked.mp3'),
+};
+
+// Flag to disable sounds if assets are missing (for development)
+const SOUNDS_ENABLED = false; // Set to true when audio files are added
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -74,7 +95,6 @@ ViroMaterials.createMaterials({
   // Gold material for fixed-value coins
   goldCoin: {
     diffuseColor: '#FFD700',
-    specularColor: '#FFFFFF',
     shininess: 0.8,
     lightingModel: 'Blinn',
   },
@@ -82,7 +102,6 @@ ViroMaterials.createMaterials({
   // Silver material for pool coins (mystery value)
   silverCoin: {
     diffuseColor: '#C0C0C0',
-    specularColor: '#FFFFFF',
     shininess: 0.9,
     lightingModel: 'Blinn',
   },
@@ -90,7 +109,6 @@ ViroMaterials.createMaterials({
   // Bronze material for third-tier multi-find
   bronzeCoin: {
     diffuseColor: '#CD7F32',
-    specularColor: '#FFFFFF',
     shininess: 0.6,
     lightingModel: 'Blinn',
   },
@@ -98,7 +116,6 @@ ViroMaterials.createMaterials({
   // Locked coin material (darker, red tint)
   lockedCoin: {
     diffuseColor: '#8B4513',
-    specularColor: '#FF6B6B',
     shininess: 0.4,
     lightingModel: 'Blinn',
   },
@@ -118,48 +135,33 @@ const COIN_SIZE = {
 /** Value label offset above coin */
 const LABEL_Y_OFFSET = 0.15;
 
-/** Particle emitter configuration */
-const SPARKLE_CONFIG = {
-  duration: 2000,
-  loop: true,
-  delay: 0,
-  image: {
-    // Use a simple particle - will be replaced with actual sparkle texture
-    source: undefined, // Will use default particle
-    height: 0.02,
-    width: 0.02,
-  },
-  spawnBehavior: {
-    emissionRatePerSecond: [8, 12] as [number, number],
-    emissionBurst: undefined,
-    maxParticles: 20,
-    particleLifetime: [1000, 2000] as [number, number],
-    spawnVolume: {
-      shape: 'sphere' as const,
-      params: [0.1],
-      spawnOnSurface: true,
-    },
-  },
-  particleAppearance: {
-    opacity: {
-      initialRange: [0.6, 1.0] as [number, number],
-      interpolation: [
-        { endValue: 0, interval: [0.8, 1.0] as [number, number] },
-      ],
-    },
-    scale: {
-      initialRange: [[0.5, 0.5, 0.5], [1.0, 1.0, 1.0]] as [[number, number, number], [number, number, number]],
-    },
-    color: {
-      initialRange: ['#FFD700', '#FFFF00'] as [string, string],
-    },
-  },
-  particlePhysics: {
-    velocity: {
-      initialRange: [[-0.02, 0.05, -0.02], [0.02, 0.1, 0.02]] as [[number, number, number], [number, number, number]],
-    },
-  },
-};
+/*
+ * TODO: Enable particles when texture is added to assets/images/sparkle.png
+ * 
+ * const SPARKLE_CONFIG = {
+ *   duration: 2000,
+ *   loop: true,
+ *   delay: 0,
+ *   image: {
+ *     source: require('../../assets/images/sparkle.png'),
+ *     height: 0.02,
+ *     width: 0.02,
+ *     bloomThreshold: 0.5,
+ *   },
+ *   spawnBehavior: {
+ *     emissionRatePerSecond: [8, 12],
+ *     maxParticles: 20,
+ *     particleLifetime: [1000, 2000],
+ *     spawnVolume: { shape: 'sphere', params: [0.1], spawnOnSurface: true },
+ *   },
+ *   particleAppearance: {
+ *     opacity: { initialRange: [0.6, 1.0], interpolation: [{ endValue: 0, interval: [0.8, 1.0] }] },
+ *     scale: { initialRange: [[0.5, 0.5, 0.5], [1.0, 1.0, 1.0]] },
+ *     color: { initialRange: ['#FFD700', '#FFFF00'] },
+ *   },
+ *   particlePhysics: { velocity: { initialRange: [[-0.02, 0.05, -0.02], [0.02, 0.1, 0.02]] } },
+ * };
+ */
 
 // ═══════════════════════════════════════════════════════════════════════════
 // COMPONENT
@@ -200,7 +202,7 @@ export const CoinObject: React.FC<CoinObjectProps> = ({
   onHover,
   onCollectAnimationComplete,
   scale = 1.0,
-  showParticles = true,
+  showParticles: _showParticles = true, // TODO: Use when particles enabled
 }) => {
   // ─────────────────────────────────────────────────────────────────────────
   // STATE
@@ -208,6 +210,8 @@ export const CoinObject: React.FC<CoinObjectProps> = ({
 
   const [animationState, setAnimationState] = useState<AnimationState>('idle');
   const [isHovering, setIsHovering] = useState(false);
+  const [playCollectSound, setPlayCollectSound] = useState(false);
+  const [playLockedSound, setPlayLockedSound] = useState(false);
 
   // ─────────────────────────────────────────────────────────────────────────
   // COMPUTED VALUES
@@ -295,6 +299,11 @@ export const CoinObject: React.FC<CoinObjectProps> = ({
     // Don't allow collection if locked (show popup instead)
     if (isLocked) {
       console.log(`[CoinObject] Coin ${id} is locked (above find limit)`);
+      // Play locked sound
+      if (SOUNDS_ENABLED) {
+        setPlayLockedSound(true);
+        setTimeout(() => setPlayLockedSound(false), 1000);
+      }
       // The parent component should show the FindLimitPopup
       return;
     }
@@ -307,6 +316,11 @@ export const CoinObject: React.FC<CoinObjectProps> = ({
 
     console.log(`[CoinObject] Starting collection for coin ${id}`);
     setAnimationState('collecting');
+
+    // Play collection sound
+    if (SOUNDS_ENABLED) {
+      setPlayCollectSound(true);
+    }
 
     // Notify parent
     onCollect(id);
@@ -391,8 +405,10 @@ export const CoinObject: React.FC<CoinObjectProps> = ({
 
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* SPARKLE PARTICLES */}
+      {/* TODO: Enable when particle texture is added to assets/images/sparkle.png */}
       {/* ─────────────────────────────────────────────────────────────────── */}
-      {showParticles && animationState !== 'collecting' && (
+      {/* 
+      {PARTICLES_ENABLED && showParticles && animationState !== 'collecting' && (
         <ViroParticleEmitter
           position={[0, 0, 0]}
           duration={SPARKLE_CONFIG.duration}
@@ -400,26 +416,52 @@ export const CoinObject: React.FC<CoinObjectProps> = ({
           delay={SPARKLE_CONFIG.delay}
           run={true}
           image={{
+            source: require('../../assets/images/sparkle.png'),
             height: SPARKLE_CONFIG.image.height * scale,
             width: SPARKLE_CONFIG.image.width * scale,
+            bloomThreshold: SPARKLE_CONFIG.image.bloomThreshold,
           }}
           spawnBehavior={{
             ...SPARKLE_CONFIG.spawnBehavior,
             emissionRatePerSecond: isLocked
-              ? [4, 6] // Fewer particles for locked coins
+              ? [4, 6]
               : SPARKLE_CONFIG.spawnBehavior.emissionRatePerSecond,
           }}
           particleAppearance={{
             ...SPARKLE_CONFIG.particleAppearance,
             color: {
               initialRange: isLocked
-                ? ['#FF6B6B', '#FF4444'] // Red particles for locked
+                ? ['#FF6B6B', '#FF4444']
                 : coinType === 'pool'
-                ? ['#C0C0C0', '#FFFFFF'] // Silver particles for pool
-                : ['#FFD700', '#FFFF00'], // Gold particles for fixed
+                ? ['#C0C0C0', '#FFFFFF']
+                : ['#FFD700', '#FFFF00'],
             },
           }}
           particlePhysics={SPARKLE_CONFIG.particlePhysics}
+        />
+      )}
+      */}
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* SOUND EFFECTS */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {SOUNDS_ENABLED && playCollectSound && (
+        <ViroSound
+          source={SOUNDS.collect}
+          paused={false}
+          loop={false}
+          volume={1.0}
+          onFinish={() => setPlayCollectSound(false)}
+        />
+      )}
+
+      {SOUNDS_ENABLED && playLockedSound && (
+        <ViroSound
+          source={SOUNDS.locked}
+          paused={false}
+          loop={false}
+          volume={0.8}
+          onFinish={() => setPlayLockedSound(false)}
         />
       )}
     </ViroNode>

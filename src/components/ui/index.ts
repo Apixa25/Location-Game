@@ -22,3 +22,5 @@ export type { GasMeterProps } from './GasMeter';
 export { PrizeFinderHUD } from './PrizeFinderHUD';
 export type { PrizeFinderHUDProps } from './PrizeFinderHUD';
 
+export { FindLimitPopup } from './FindLimitPopup';
+export type { FindLimitPopupProps } from './FindLimitPopup';

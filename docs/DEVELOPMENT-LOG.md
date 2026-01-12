@@ -9,8 +9,8 @@
 | Item | Value |
 |------|-------|
 | **Project Path** | `C:\Users\Admin\Location-Game` |
-| **Current Sprint** | Sprint 3 Complete ✅ |
-| **Next Sprint** | Sprint 4: Coin System |
+| **Current Sprint** | Sprint 4 Complete ✅ |
+| **Next Sprint** | Sprint 5: User Authentication |
 | **Last Updated** | January 11, 2026 |
 
 ---
@@ -52,6 +52,7 @@ src/
 ├── screens/              # App screens
 │   ├── HomeScreen.tsx
 │   ├── PrizeFinderScreen.tsx   # Main AR hunting screen
+│   ├── HideCoinScreen.tsx      # Coin hiding wizard
 │   ├── MapScreen.tsx
 │   ├── WalletScreen.tsx
 │   └── SettingsScreen.tsx
@@ -65,6 +66,7 @@ src/
 │       ├── Compass.tsx
 │       ├── Crosshairs.tsx
 │       ├── FindLimit.tsx
+│       ├── FindLimitPopup.tsx  # Locked coin modal
 │       ├── MiniMap.tsx
 │       ├── GasMeter.tsx
 │       ├── PrizeFinderHUD.tsx
@@ -78,6 +80,8 @@ src/
 ├── services/             # Business logic
 │   ├── location.ts       # GPS tracking, distance/bearing
 │   ├── haptics.ts        # Proximity vibration feedback
+│   ├── coinService.ts    # Collection & hiding logic
+│   ├── findLimitService.ts  # Find limit tiers & messaging
 │   └── index.ts
 ├── hooks/                # Custom React hooks
 │   ├── useLocation.ts    # Location tracking hook
@@ -233,16 +237,47 @@ ANIMATIONS.VALUE_POPUP    // +$5.00 floating text
 - `convertCoinsToAR()` - Batch conversion with distances
 - `filterCoinsInARRange()` / `sortCoinsByDistance()`
 
+### Sprint 4: Coin System ✅
+
+#### 4.1 Coin Service (`src/services/coinService.ts`)
+- `canCollectCoin()` - Validate collection (range, limit, gas)
+- `getOverLimitMessage()` / `getOverLimitHint()` - User messaging
+- `isCoinLocked()` - Check if above find limit
+- `calculatePoolCoinValue()` - Slot machine algorithm for pool coins
+- `collectCoin()` / `collectPoolCoin()` - API stubs
+- `hideCoin()` / `validateHideLocation()` - Coin hiding
+
+#### 4.2 Find Limit Service (`src/services/findLimitService.ts`)
+- `calculateNewFindLimit()` - Based on highest contribution
+- `checkFindLimit()` - Returns locked status with messaging
+- `getTierForLimit()` - 5 tiers: Cabin Boy, Deck Hand, Treasure Hunter, Captain, Pirate Legend
+- `getTierName()` / `getTierColor()` / `getTierProgress()`
+- Pirate-themed messaging functions
+
+#### 4.3 Hide Coin Screen (`src/screens/HideCoinScreen.tsx`)
+- 4-step wizard: Type → Value → Location → Confirm
+- Fixed Value or Pool Contribution selection
+- Denomination picker: 5¢ to $100
+- Find limit preview (shows what will be unlocked)
+- GPS location integration
+
+#### 4.4 Find Limit Popup (`src/components/ui/FindLimitPopup.tsx`)
+- Modal shown when tapping locked coins
+- Animated shake on lock icon
+- Shows coin value, player limit, current tier
+- Hint to hide coins for higher limit
+- "Hide Coin" button navigation
+
+#### 4.5 CoinObject Sound Support
+- ViroSound integration for collection/locked sounds
+- Sound enabled flag (for development without audio files)
+- Particle effects commented out (needs texture asset)
+
 ---
 
 ## 🔜 Upcoming Sprints
 
-### Sprint 4: Coin System (NEXT)
-- [ ] Coin collection logic
-- [ ] Find limit enforcement
-- [ ] Coin hiding flow
-
-### Sprint 5: User Authentication
+### Sprint 5: User Authentication (NEXT)
 - [ ] Auth service
 - [ ] Login/Register screens
 - [ ] Protected routes
