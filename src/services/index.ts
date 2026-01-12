@@ -160,3 +160,32 @@ export {
 } from './gasService';
 export type { ExtendedGasStatus } from './gasService';
 
+// ═══════════════════════════════════════════════════════════════════════════
+// API CLIENT
+// ═══════════════════════════════════════════════════════════════════════════
+export {
+  api,
+  get,
+  post,
+  put,
+  del,
+  patch,
+  setAuthToken,
+  getAuthToken,
+  clearAuthToken,
+  ApiError,
+  API_BASE_URL,
+} from './api';
+export type { ApiResponse } from './api';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// API CONFIGURATION
+// ═══════════════════════════════════════════════════════════════════════════
+export {
+  USE_REAL_API,
+  API_URLS,
+  getCurrentEnvironment,
+  getApiBaseUrl,
+  shouldUseRealApi,
+} from './apiConfig';
+

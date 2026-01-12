@@ -34,3 +34,19 @@ export type { NoGasScreenProps } from './NoGasScreen';
 
 export { LowGasWarning } from './LowGasWarning';
 export type { LowGasWarningProps } from './LowGasWarning';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ERROR & STATE COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+export { NetworkError } from './NetworkError';
+export type { NetworkErrorProps } from './NetworkError';
+
+export { ARErrorScreen } from './ARErrorScreen';
+export type { ARErrorScreenProps } from './ARErrorScreen';
+
+export { EmptyState } from './EmptyState';
+export type { EmptyStateProps, EmptyStateType } from './EmptyState';
+
+export { LoadingOverlay } from './LoadingOverlay';
+export type { LoadingOverlayProps } from './LoadingOverlay';
