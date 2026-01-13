@@ -6,7 +6,7 @@
 
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { View, StyleSheet, ActivityIndicator, Text, BackHandler, Platform, TouchableOpacity } from 'react-native';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { ViroARSceneNavigator } from '@reactvision/react-viro';
 import { PrizeFinderScene } from '../ar/PrizeFinderScene';
 import { NoGasScreen, LowGasWarning } from '../components/ui';
@@ -32,6 +32,7 @@ const COLORS = {
 export const PrizeFinderScreen: React.FC = () => {
   const navigation = useNavigation();
   const userId = useUserStore((state) => state.userId) || 'default';
+  const storeGasRemaining = useUserStore((state) => state.gasRemaining);
 
   // ─────────────────────────────────────────────────────────────────────────
   // GAS STATE
@@ -76,29 +77,52 @@ export const PrizeFinderScreen: React.FC = () => {
   useEffect(() => {
     const checkGas = async () => {
       try {
+        console.log('[PrizeFinderScreen] Checking gas for userId:', userId, 'storeGasRemaining:', storeGasRemaining);
+        
         const result = await checkGasOnLaunch(userId);
         const status = await getDetailedGasStatus(userId);
         const balance = await getBalance(userId);
 
-        setGasCheckResult(result);
-        setGasStatus(status);
-        setParkedAmount(balance.parked);
+        console.log('[PrizeFinderScreen] walletService result:', result, 'status:', status);
 
-        if (result === 'NO_GAS') {
-          setShowNoGasScreen(true);
-        } else if (result === 'LOW_GAS' && !status.warningDismissed) {
-          setShowLowGasWarning(true);
+        // If walletService says NO_GAS but store has gas, use store values
+        if (result === 'NO_GAS' && storeGasRemaining > 0) {
+          console.log('[PrizeFinderScreen] Using store gas as fallback:', storeGasRemaining);
+          setGasCheckResult('OK');
+          setGasStatus({
+            days_left: storeGasRemaining,
+            remaining: storeGasRemaining * 0.33,
+            warningDismissed: false,
+          } as ExtendedGasStatus);
+          setParkedAmount(balance.parked);
+          // Don't show no gas screen
+        } else {
+          setGasCheckResult(result);
+          setGasStatus(status);
+          setParkedAmount(balance.parked);
+
+          if (result === 'NO_GAS') {
+            setShowNoGasScreen(true);
+          } else if (result === 'LOW_GAS' && !status.warningDismissed) {
+            setShowLowGasWarning(true);
+          }
         }
       } catch (error) {
         console.error('[PrizeFinderScreen] Gas check error:', error);
-        setGasCheckResult('OK');
+        // On error, check store values before defaulting to OK
+        if (storeGasRemaining > 0) {
+          setGasCheckResult('OK');
+        } else {
+          setGasCheckResult('NO_GAS');
+          setShowNoGasScreen(true);
+        }
       } finally {
         setIsCheckingGas(false);
       }
     };
 
     checkGas();
-  }, [userId]);
+  }, [userId, storeGasRemaining]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // CLEANUP ON UNMOUNT
@@ -131,17 +155,11 @@ export const PrizeFinderScreen: React.FC = () => {
     // This prevents the crash from happening immediately
   }, [isExiting]);
 
-  // Separate function for actual navigation (will cause crash)
+  // Separate function for actual navigation
   const doNavigateBack = useCallback(() => {
-    console.log('[PrizeFinderScreen] User confirmed exit - resetting navigation (may crash)...');
-    // Use reset instead of goBack to fully clear navigation state
-    // This might help the app recover better after the ViroReact crash
-    navigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: 'Main' as never }],
-      })
-    );
+    console.log('[PrizeFinderScreen] User confirmed exit - navigating back...');
+    // Use simple goBack() - the route name was wrong before!
+    navigation.goBack();
   }, [navigation]);
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -285,10 +303,6 @@ export const PrizeFinderScreen: React.FC = () => {
           <TouchableOpacity style={styles.returnButton} onPress={doNavigateBack}>
             <Text style={styles.returnButtonText}>⚓ Return to Port</Text>
           </TouchableOpacity>
-          
-          <Text style={styles.exitingWarning}>
-            ⚠️ You may see an error dialog - just tap "Dismiss"
-          </Text>
         </View>
       )}
     </View>
@@ -365,13 +379,6 @@ const styles = StyleSheet.create({
     color: COLORS.deepSea,
     fontSize: 18,
     fontWeight: 'bold',
-  },
-  exitingWarning: {
-    color: 'rgba(255, 200, 100, 0.8)',
-    fontSize: 12,
-    marginTop: 30,
-    textAlign: 'center',
-    paddingHorizontal: 40,
   },
   hudContainer: {
     position: 'absolute',

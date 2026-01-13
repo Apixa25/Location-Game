@@ -231,7 +231,12 @@ const ParkModal: React.FC<{
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const WalletScreen: React.FC = () => {
+  // Get user data from store - this is the source of truth
   const userId = useUserStore((state) => state.userId) || 'default';
+  const storeBalance = useUserStore((state) => state.bbgBalance);
+  const storeGasRemaining = useUserStore((state) => state.gasRemaining);
+
+  console.log('[WalletScreen] userId:', userId, 'storeBalance:', storeBalance, 'storeGasRemaining:', storeGasRemaining);
 
   const [balance, setBalance] = useState<WalletBalance | null>(null);
   const [gasStatus, setGasStatus] = useState<GasStatus | null>(null);
@@ -249,17 +254,44 @@ export const WalletScreen: React.FC = () => {
 
   const loadData = useCallback(async () => {
     try {
+      console.log('[WalletScreen] Loading data for userId:', userId);
+      
       const [balanceData, gasData, txData] = await Promise.all([
         getBalance(userId),
         getGasStatus(userId),
         getTransactions(userId, 50, 0),
       ]);
 
+      console.log('[WalletScreen] walletService returned:', balanceData, gasData);
+
       // Also confirm any pending coins
       await confirmPendingCoins(userId);
 
-      setBalance(balanceData);
-      setGasStatus(gasData);
+      // If walletService returns zeros but store has values, use store values
+      // This handles the case where wallet wasn't initialized properly
+      if (balanceData.total === 0 && storeBalance > 0) {
+        console.log('[WalletScreen] Using store values as fallback');
+        const gasInBBG = storeGasRemaining * 0.33; // DAILY_GAS_RATE
+        const fallbackBalance: WalletBalance = {
+          total: storeBalance,
+          gas_tank: gasInBBG,
+          parked: Math.max(0, storeBalance - gasInBBG),
+          pending: 0,
+        };
+        const fallbackGas: GasStatus = {
+          remaining: gasInBBG,
+          days_left: storeGasRemaining,
+          is_low: storeGasRemaining < 5,
+          is_empty: storeGasRemaining <= 0,
+          daily_rate: 0.33,
+        };
+        setBalance(fallbackBalance);
+        setGasStatus(fallbackGas);
+      } else {
+        setBalance(balanceData);
+        setGasStatus(gasData);
+      }
+      
       setTransactions(txData);
     } catch (error) {
       console.error('[WalletScreen] Error loading data:', error);
@@ -267,7 +299,7 @@ export const WalletScreen: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [userId]);
+  }, [userId, storeBalance, storeGasRemaining]);
 
   useEffect(() => {
     loadData();
