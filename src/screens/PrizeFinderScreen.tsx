@@ -5,7 +5,7 @@
 // Reference: docs/prize-finder-details.md - HUD Layout
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text, TouchableOpacity, BackHandler } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Text, TouchableOpacity, BackHandler, Pressable, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ViroARSceneNavigator } from '@reactvision/react-viro';
 import { PrizeFinderScene } from '../ar/PrizeFinderScene';
@@ -233,14 +233,23 @@ export const PrizeFinderScreen: React.FC = () => {
     return 25; // Mock: 25 meters
   }, [hoveredCoinId]);
 
+  /**
+   * Handle exit from inside AR scene (3D exit button)
+   */
+  const handleExitFromAR = useCallback(() => {
+    console.log('[PrizeFinderScreen] Exit pressed from AR scene!');
+    navigation.goBack();
+  }, [navigation]);
+
   // Memoize viroAppProps to prevent re-renders
   const viroAppProps = useMemo(
     () => ({
       onTrackingStateChange: handleTrackingStateChange,
       onCoinCollected: handleCoinCollected,
       onCoinHovered: handleCoinHovered,
+      onExitPressed: handleExitFromAR,
     }),
-    [handleTrackingStateChange, handleCoinCollected, handleCoinHovered]
+    [handleTrackingStateChange, handleCoinCollected, handleCoinHovered, handleExitFromAR]
   );
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -299,6 +308,26 @@ export const PrizeFinderScreen: React.FC = () => {
       )}
 
       {/* ───────────────────────────────────────────────────────────────────── */}
+      {/* FLOATING EXIT BUTTON - Using Pressable with native feedback */}
+      {/* This is placed last to be on top of everything */}
+      {/* ───────────────────────────────────────────────────────────────────── */}
+      {!showNoGasScreen && (
+        <Pressable
+          onPress={() => {
+            console.log('[PrizeFinderScreen] Exit button pressed!');
+            navigation.goBack();
+          }}
+          style={({ pressed }) => [
+            styles.exitButton,
+            pressed && styles.exitButtonPressed,
+          ]}
+          android_ripple={{ color: '#FFD700', borderless: false }}
+        >
+          <Text style={styles.exitButtonText}>✕ EXIT</Text>
+        </Pressable>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────────────── */}
       {/* LOW GAS WARNING BANNER */}
       {/* ───────────────────────────────────────────────────────────────────── */}
       {showLowGasWarning && gasStatus && (
@@ -321,8 +350,7 @@ export const PrizeFinderScreen: React.FC = () => {
         />
       )}
 
-      {/* NOTE: ViroReact consumes all touch events, so overlay buttons don't work.
-          Use Android back button (hardware or gesture) to exit AR mode. */}
+      {/* TIP: If buttons don't work, use Android back gesture (swipe from left edge) */}
     </View>
   );
 };
@@ -351,25 +379,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  floatingCloseButton: {
+  // Floating exit button - high elevation to appear above ViroReact
+  exitButton: {
     position: 'absolute',
-    top: 50,
-    left: 15,
-    width: 50,
-    height: 50,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    top: Platform.OS === 'android' ? 40 : 60,
+    right: 20,
+    backgroundColor: 'rgba(139, 0, 0, 0.95)', // Pirate red
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
     borderWidth: 2,
     borderColor: '#FFD700',
-    zIndex: 9999,
-    elevation: 10,
+    elevation: 100, // Very high elevation for Android
+    zIndex: 99999,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
   },
-  floatingCloseText: {
-    fontSize: 24,
+  exitButtonPressed: {
+    backgroundColor: 'rgba(200, 50, 50, 0.95)',
+    transform: [{ scale: 0.95 }],
+  },
+  exitButtonText: {
     color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: 'bold',
+    letterSpacing: 1,
   },
 });
 

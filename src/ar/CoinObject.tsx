@@ -131,10 +131,11 @@ ViroMaterials.createMaterials({
 // ═══════════════════════════════════════════════════════════════════════════
 
 /** Default coin dimensions (will be replaced with 3D model) */
+// Made larger for easier tap detection
 const COIN_SIZE = {
-  width: 0.15,
-  height: 0.02,
-  length: 0.15,
+  width: 0.3,
+  height: 0.05,
+  length: 0.3,
 };
 
 /** Value label offset above coin */
@@ -295,9 +296,11 @@ export const CoinObject: React.FC<CoinObjectProps> = ({
   // ─────────────────────────────────────────────────────────────────────────
 
   /**
-   * Handle coin click/tap
+   * Handle coin click/tap using onClick (based on ViroMedia test examples)
    */
   const handleClick = useCallback(() => {
+    console.log(`[CoinObject] CLICKED coin ${id}`);
+
     // Don't allow collection if already collecting
     if (animationState === 'collecting') return;
 

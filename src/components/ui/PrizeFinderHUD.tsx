@@ -177,10 +177,10 @@ export const PrizeFinderHUD: React.FC<PrizeFinderHUDProps> = ({
       {/* ───────────────────────────────────────────────────────────────────── */}
       {/* TOP BAR */}
       {/* ───────────────────────────────────────────────────────────────────── */}
-      <View style={styles.topBar} pointerEvents="none">
-        {/* Close Button - Hidden since ViroReact blocks touches. Use Android back button instead. */}
+      <View style={styles.topBar} pointerEvents="box-none">
+        {/* Back hint - just informational */}
         <View style={styles.backHint}>
-          <Text style={styles.backHintText}>← Back to exit</Text>
+          <Text style={styles.backHintText}>← Swipe to exit</Text>
         </View>
 
         {/* Session Stats (center) - only show if coins collected */}
