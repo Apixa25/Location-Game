@@ -7,8 +7,24 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { View, StyleSheet, ActivityIndicator, Text, BackHandler, Platform, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { ViroARSceneNavigator } from '@reactvision/react-viro';
-import { PrizeFinderScene } from '../ar/PrizeFinderScene';
+
+// ViroReact only works on ARM devices - check if available
+let ViroARSceneNavigator: any = null;
+let PrizeFinderScene: any = null;
+let isViroAvailable = false;
+
+try {
+  const viroModule = require('@reactvision/react-viro');
+  ViroARSceneNavigator = viroModule.ViroARSceneNavigator;
+  // Check if the native module actually loaded
+  isViroAvailable = ViroARSceneNavigator != null;
+  if (isViroAvailable) {
+    PrizeFinderScene = require('../ar/PrizeFinderScene').PrizeFinderScene;
+  }
+} catch (e) {
+  console.log('[PrizeFinderScreen] ViroReact not available:', e);
+  isViroAvailable = false;
+}
 import { NoGasScreen, LowGasWarning } from '../components/ui';
 import { useUserStore, useLocationStore } from '../store';
 import { checkGasOnLaunch, getDetailedGasStatus, ExtendedGasStatus } from '../services/gasService';
@@ -233,6 +249,29 @@ export const PrizeFinderScreen: React.FC = () => {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
+  // RENDER: AR NOT AVAILABLE (x86 emulator or missing native libs)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  if (!isViroAvailable) {
+    return (
+      <View style={styles.arUnavailableContainer}>
+        <Text style={styles.arUnavailableIcon}>🏴‍☠️</Text>
+        <Text style={styles.arUnavailableTitle}>AR Not Available</Text>
+        <Text style={styles.arUnavailableText}>
+          The AR treasure hunting feature requires an ARM-based device.
+          {'\n\n'}
+          x86 emulators don't support ViroReact's native AR libraries.
+          {'\n\n'}
+          Please test on a real Android device!
+        </Text>
+        <TouchableOpacity style={styles.arUnavailableButton} onPress={() => navigation.goBack()}>
+          <Text style={styles.arUnavailableButtonText}>⚓ Return to Port</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -422,6 +461,42 @@ const styles = StyleSheet.create({
     textShadowColor: '#000',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
+  },
+  // AR Unavailable Screen (x86 emulator)
+  arUnavailableContainer: {
+    flex: 1,
+    backgroundColor: COLORS.deepSea,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  arUnavailableIcon: {
+    fontSize: 80,
+    marginBottom: 20,
+  },
+  arUnavailableTitle: {
+    color: COLORS.gold,
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  arUnavailableText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  arUnavailableButton: {
+    backgroundColor: COLORS.gold,
+    paddingHorizontal: 40,
+    paddingVertical: 16,
+    borderRadius: 30,
+    marginTop: 40,
+  },
+  arUnavailableButtonText: {
+    color: COLORS.deepSea,
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
 

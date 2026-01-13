@@ -647,13 +647,22 @@ export const useStoreName = create<State & Actions>()(
 
 ## 🐛 Known Issues / TODOs
 
+### Active Issues
 1. **ViroARSceneNavigator type** - Using type assertion `as () => React.JSX.Element` as workaround
 2. **Sound effects** - Placeholders, need actual audio files in `assets/audio/`
 3. **3D coin model** - Using ViroBox placeholder, need .obj file in `assets/models/`
-4. **ViroReact x86 limitation** - AR features only work on ARM devices (real phones); x86 emulators show UI only
-5. ~~**Minor auth bug** - `clearUser is not a function` error in useAuth hook~~ - **FIXED** (Session 2)
-6. ~~**Backend not started** - Need to run `npm run dev` in backend folder~~ - **FIXED** (Session 2)
-7. **Location permission** - Emulator shows "never_ask_again" status; need to manually grant or use Settings
+4. **ViroReact x86 limitation** - AR features only work on ARM devices (real phones); x86 emulators now show graceful "AR Not Available" fallback screen
+5. **Location permission** - Emulator shows "never_ask_again" status; need to manually grant or use Settings
+6. **ViroReact + Fabric architecture crash** - Exiting AR screen on real devices may cause a crash with error "UIManagerModule cannot be cast to FabricFabric". This is a [known ViroReact issue](https://github.com/NativeVision/viro/issues/317). Workaround: Dismiss the error dialog, app state is preserved.
+
+### Fixed Issues (Session 2)
+- ~~**Minor auth bug** - `clearUser is not a function` error in useAuth hook~~ - **FIXED**
+- ~~**Backend not started** - Need to run `npm run dev` in backend folder~~ - **FIXED**
+- ~~**HomeScreen showing $0 balance** - Was using hardcoded values~~ - **FIXED** (reads from useUserStore)
+- ~~**WalletScreen showing $0** - walletService not initialized on login~~ - **FIXED** (added initializeWallet)
+- ~~**Settings "Not signed in"** - Was using hardcoded text~~ - **FIXED** (shows actual user email)
+- ~~**Map coins not clickable** - Missing onPress handler~~ - **FIXED** (navigates to PrizeFinder)
+- ~~**x86 emulator crash on AR** - ViroReact native libs missing~~ - **FIXED** (graceful fallback screen)
 
 ---
 
