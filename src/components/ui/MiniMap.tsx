@@ -56,10 +56,15 @@ const SELECTED_DOT_SIZE = 10;
  * Returns normalized position (-1 to 1) based on radius
  */
 function calculateRelativePosition(
-  playerPos: Coordinates,
-  coinPos: Coordinates,
+  playerPos: Coordinates | null | undefined,
+  coinPos: Coordinates | null | undefined,
   radiusMeters: number
 ): { x: number; y: number; distance: number } {
+  // Safety check for null/undefined positions
+  if (!playerPos?.latitude || !playerPos?.longitude || !coinPos?.latitude || !coinPos?.longitude) {
+    return { x: 0, y: 0, distance: 0 };
+  }
+  
   // Approximate meters per degree at equator (simplified)
   const metersPerDegreeLat = 111320;
   const metersPerDegreeLng = 111320 * Math.cos((playerPos.latitude * Math.PI) / 180);
@@ -118,28 +123,30 @@ export const MiniMap: React.FC<MiniMapProps> = ({
    * Calculate coin positions on the mini map
    */
   const coinPositions = useMemo(() => {
-    if (!playerPosition) return [];
+    if (!playerPosition?.latitude || !playerPosition?.longitude) return [];
 
-    return coins.map((coin) => {
-      const { x, y, distance } = calculateRelativePosition(
-        playerPosition,
-        coin.position,
-        radiusMeters
-      );
+    return coins
+      .filter((coin) => coin.position?.latitude && coin.position?.longitude) // Filter out invalid coins
+      .map((coin) => {
+        const { x, y, distance } = calculateRelativePosition(
+          playerPosition,
+          coin.position,
+          radiusMeters
+        );
 
-      // Convert normalized position to screen position
-      const mapRadius = (size - 20) / 2; // Leave some padding
-      const screenX = size / 2 + x * mapRadius;
-      const screenY = size / 2 + y * mapRadius;
+        // Convert normalized position to screen position
+        const mapRadius = (size - 20) / 2; // Leave some padding
+        const screenX = size / 2 + x * mapRadius;
+        const screenY = size / 2 + y * mapRadius;
 
-      return {
-        ...coin,
-        screenX,
-        screenY,
-        distance,
-        isSelected: coin.id === selectedCoinId,
-      };
-    });
+        return {
+          ...coin,
+          screenX,
+          screenY,
+          distance,
+          isSelected: coin.id === selectedCoinId,
+        };
+      });
   }, [playerPosition, coins, selectedCoinId, size, radiusMeters]);
 
   /**

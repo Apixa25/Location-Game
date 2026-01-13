@@ -79,10 +79,13 @@ export const PrizeFinderScreen: React.FC = () => {
   const currentLocation = useLocationStore((state) => state.currentLocation);
 
   // Mock player position for testing (will use real GPS later)
-  const playerPosition: Coordinates = currentLocation ?? {
-    latitude: 37.7749,
-    longitude: -122.4194,
-  };
+  // Add extra safety check for partial location objects
+  const playerPosition: Coordinates = (currentLocation && currentLocation.latitude && currentLocation.longitude)
+    ? currentLocation
+    : {
+        latitude: 37.7749,
+        longitude: -122.4194,
+      };
 
   // ─────────────────────────────────────────────────────────────────────────
   // GAS CHECK ON MOUNT

@@ -1,17 +1,22 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useShallow } from 'zustand/react/shallow';
 import { useAuth } from '../hooks/useAuth';
 import { useUserStore } from '../store';
 
 export const SettingsScreen = () => {
   const navigation = useNavigation();
   const { user, isAuthenticated, logout } = useAuth();
-  const { bbgBalance, gasRemaining, findLimit } = useUserStore((state) => ({
-    bbgBalance: state.bbgBalance,
-    gasRemaining: state.gasRemaining,
-    findLimit: state.findLimit,
-  }));
+  
+  // Use useShallow to prevent getSnapshot warnings
+  const { bbgBalance, gasRemaining, findLimit } = useUserStore(
+    useShallow((state) => ({
+      bbgBalance: state.bbgBalance,
+      gasRemaining: state.gasRemaining,
+      findLimit: state.findLimit,
+    }))
+  );
   
   const [hapticEnabled, setHapticEnabled] = React.useState(true);
   const [soundEnabled, setSoundEnabled] = React.useState(true);

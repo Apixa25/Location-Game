@@ -197,8 +197,9 @@ export const MapScreen: React.FC = () => {
   const coinCount = useNearbyCoinCount();
   const closestCoin = useClosestCoin();
   
-  // User
-  const { findLimit, gasRemaining } = useUserStore();
+  // User - use individual selectors to prevent getSnapshot warnings
+  const findLimit = useUserStore((state) => state.findLimit);
+  const gasRemaining = useUserStore((state) => state.gasRemaining);
   
   // Handle coin tap
   const handleCoinPress = useCallback((coinId: string, isLocked: boolean) => {
