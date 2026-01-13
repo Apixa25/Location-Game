@@ -6,7 +6,7 @@
 
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { View, StyleSheet, ActivityIndicator, Text, BackHandler, Platform } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { ViroARSceneNavigator } from '@reactvision/react-viro';
 import { PrizeFinderScene } from '../ar/PrizeFinderScene';
 import { NoGasScreen, LowGasWarning } from '../components/ui';
@@ -51,6 +51,10 @@ export const PrizeFinderScreen: React.FC = () => {
   const [trackingState, setTrackingState] = useState<ARTrackingState>('NORMAL');
   const [coinsCollectedCount, setCoinsCollectedCount] = useState(0);
   const [totalValueCollected, setTotalValueCollected] = useState(0);
+  
+  // NEW: Control whether AR is actively rendered
+  const [isARMounted, setIsARMounted] = useState(true);
+  const [isExiting, setIsExiting] = useState(false);
 
   // ─────────────────────────────────────────────────────────────────────────
   // STORE DATA
@@ -62,6 +66,7 @@ export const PrizeFinderScreen: React.FC = () => {
 
   // Ref to ViroARSceneNavigator for cleanup
   const arNavigatorRef = useRef<any>(null);
+  const exitTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const playerPosition: Coordinates = (currentLocation && currentLocation.latitude && currentLocation.longitude)
     ? currentLocation
@@ -99,26 +104,49 @@ export const PrizeFinderScreen: React.FC = () => {
   }, [userId]);
 
   // ─────────────────────────────────────────────────────────────────────────
-  // SAFE EXIT FUNCTION - Reset AR session before navigating
+  // CLEANUP ON UNMOUNT
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  useEffect(() => {
+    return () => {
+      // Clean up any pending timeouts
+      if (exitTimeoutRef.current) {
+        clearTimeout(exitTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // SAFE EXIT FUNCTION - Unmount AR first, then navigate
   // ─────────────────────────────────────────────────────────────────────────
   
   const safeExit = useCallback(() => {
-    console.log('[PrizeFinderScreen] Safe exit - resetting AR session...');
-    try {
-      // Try to reset AR session before navigating
-      if (arNavigatorRef.current?.resetARSession) {
-        arNavigatorRef.current.resetARSession(true, true);
-        console.log('[PrizeFinderScreen] AR session reset');
-      }
-    } catch (error) {
-      console.log('[PrizeFinderScreen] Error resetting AR session:', error);
+    // Prevent double-exit
+    if (isExiting) {
+      console.log('[PrizeFinderScreen] Already exiting, ignoring...');
+      return;
     }
     
-    // Small delay to let AR cleanup happen
-    setTimeout(() => {
-      navigation.goBack();
-    }, 100);
-  }, [navigation]);
+    console.log('[PrizeFinderScreen] Safe exit - Step 1: Unmount AR component...');
+    setIsExiting(true);
+    
+    // Step 1: Unmount the ViroARSceneNavigator first
+    setIsARMounted(false);
+    
+    // Step 2: Wait for AR to fully unmount, then navigate
+    exitTimeoutRef.current = setTimeout(() => {
+      console.log('[PrizeFinderScreen] Step 2: Navigating away...');
+      
+      // Use navigation.reset() to fully reset the navigation stack
+      // This prevents the frozen state after AR crashes
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'Main' as never }],
+        })
+      );
+    }, 500); // Give AR 500ms to fully unmount
+  }, [navigation, isExiting]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // ANDROID BACK BUTTON HANDLER
@@ -194,10 +222,25 @@ export const PrizeFinderScreen: React.FC = () => {
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────
 
+  // Show exit screen while unmounting AR
+  if (isExiting) {
+    return (
+      <View style={styles.exitingContainer}>
+        <Text style={styles.exitingText}>🏴‍☠️</Text>
+        <Text style={styles.exitingSubtext}>Returning to port...</Text>
+        {coinsCollectedCount > 0 && (
+          <Text style={styles.exitingStats}>
+            +${totalValueCollected.toFixed(2)} collected!
+          </Text>
+        )}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      {/* AR SCENE */}
-      {!showNoGasScreen && (
+      {/* AR SCENE - Only render when isARMounted is true */}
+      {!showNoGasScreen && isARMounted && (
         <ViroARSceneNavigator
           ref={arNavigatorRef}
           autofocus={true}
@@ -271,6 +314,27 @@ const styles = StyleSheet.create({
     color: COLORS.gold,
     fontSize: 16,
     fontWeight: '600',
+  },
+  exitingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.deepSea,
+  },
+  exitingText: {
+    fontSize: 64,
+    marginBottom: 20,
+  },
+  exitingSubtext: {
+    color: COLORS.gold,
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  exitingStats: {
+    color: '#4ADE80',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 15,
   },
   hudContainer: {
     position: 'absolute',
