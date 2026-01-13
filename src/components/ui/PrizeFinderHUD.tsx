@@ -177,9 +177,14 @@ export const PrizeFinderHUD: React.FC<PrizeFinderHUDProps> = ({
       {/* ───────────────────────────────────────────────────────────────────── */}
       {/* TOP BAR */}
       {/* ───────────────────────────────────────────────────────────────────── */}
-      <View style={styles.topBar} pointerEvents="box-none">
+      <View style={styles.topBar}>
         {/* Close Button */}
-        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+        <TouchableOpacity 
+          style={styles.closeButton} 
+          onPress={onClose}
+          activeOpacity={0.7}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
           <Text style={styles.closeButtonText}>✕</Text>
         </TouchableOpacity>
 

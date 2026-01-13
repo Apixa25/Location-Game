@@ -5,7 +5,7 @@
 // Reference: docs/prize-finder-details.md - HUD Layout
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ViroARSceneNavigator } from '@reactvision/react-viro';
 import { PrizeFinderScene } from '../ar/PrizeFinderScene';
@@ -306,6 +306,19 @@ export const PrizeFinderScreen: React.FC = () => {
           parkedAmount={parkedAmount}
         />
       )}
+
+      {/* ───────────────────────────────────────────────────────────────────── */}
+      {/* FLOATING CLOSE BUTTON - Always on top to ensure it works */}
+      {/* ───────────────────────────────────────────────────────────────────── */}
+      {!showNoGasScreen && (
+        <TouchableOpacity
+          style={styles.floatingCloseButton}
+          onPress={handleClose}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.floatingCloseText}>✕</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -333,6 +346,26 @@ const styles = StyleSheet.create({
     color: COLORS.gold,
     fontSize: 16,
     fontWeight: '600',
+  },
+  floatingCloseButton: {
+    position: 'absolute',
+    top: 50,
+    left: 15,
+    width: 50,
+    height: 50,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFD700',
+    zIndex: 9999,
+    elevation: 10,
+  },
+  floatingCloseText: {
+    fontSize: 24,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
 });
 

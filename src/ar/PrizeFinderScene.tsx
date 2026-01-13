@@ -123,9 +123,9 @@ export const PrizeFinderScene: React.FC<PrizeFinderSceneProps> = (props) => {
   // STATE
   // ─────────────────────────────────────────────────────────────────────────
 
-  // Tracking state for AR
-  const [trackingState, setTrackingState] = useState<ARTrackingState>('UNAVAILABLE');
-  const [trackingMessage, setTrackingMessage] = useState('Initializing AR...');
+  // Tracking state for AR - default to NORMAL since if we get here, AR is working
+  const [trackingState, setTrackingState] = useState<ARTrackingState>('NORMAL');
+  const [trackingMessage, setTrackingMessage] = useState('');
 
   // Coins currently visible in the scene
   const [coins, setCoins] = useState<TestCoin[]>(INITIAL_TEST_COINS);
