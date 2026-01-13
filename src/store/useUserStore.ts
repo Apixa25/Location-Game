@@ -109,9 +109,9 @@ export const useUserStore = create<UserState & UserActions>()(
           userId: user.id,
           email: user.email,
           isAuthenticated: true,
-          bbgBalance: user.bbg_balance,
-          gasRemaining: user.gas_remaining,
-          findLimit: user.find_limit,
+          bbgBalance: user.bbg_balance ?? 0,
+          gasRemaining: user.gas_remaining ?? 0,
+          findLimit: user.find_limit ?? 1.0,
           error: null,
         });
       },

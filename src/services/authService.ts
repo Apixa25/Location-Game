@@ -328,7 +328,9 @@ export async function login(credentials: LoginCredentials): Promise<AuthResult> 
       created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days ago
       is_active: true,
       is_verified: true,
-      find_limit: 5.0, // Example: user has hidden a $5 coin
+      find_limit: 10.0, // Test user can find coins up to $10
+      bbg_balance: 50.0, // Test balance: $50 total
+      gas_remaining: 45, // Test gas: 45 days remaining
       subscription_status: 'active',
     };
 
