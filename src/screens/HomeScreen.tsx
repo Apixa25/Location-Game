@@ -3,9 +3,14 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
+import { useUserStore } from '../store';
 
 export const HomeScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  
+  // Get real values from the store! 🎯
+  const bbgBalance = useUserStore((state) => state.bbgBalance);
+  const gasRemaining = useUserStore((state) => state.gasRemaining);
 
   return (
     <View style={styles.container}>
@@ -15,11 +20,11 @@ export const HomeScreen = () => {
 
       <View style={styles.statsContainer}>
         <View style={styles.statBox}>
-          <Text style={styles.statValue}>$0.00</Text>
+          <Text style={styles.statValue}>${bbgBalance.toFixed(2)}</Text>
           <Text style={styles.statLabel}>BBG Balance</Text>
         </View>
         <View style={styles.statBox}>
-          <Text style={styles.statValue}>30</Text>
+          <Text style={styles.statValue}>{gasRemaining}</Text>
           <Text style={styles.statLabel}>Days of Gas</Text>
         </View>
       </View>

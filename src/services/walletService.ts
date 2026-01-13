@@ -711,3 +711,36 @@ export async function clearWalletData(userId: string): Promise<void> {
   console.log('[WalletService] Wallet data cleared for user:', userId);
 }
 
+/**
+ * Initializes wallet with starting balance (called on login).
+ * Sets up gas_tank based on user's gas_remaining value.
+ *
+ * @param userId - The user's ID
+ * @param bbgBalance - User's total BBG balance
+ * @param gasRemaining - User's gas in days
+ * @returns Promise<WalletBalance> - Initialized balance
+ */
+export async function initializeWallet(
+  userId: string,
+  bbgBalance: number,
+  gasRemaining: number
+): Promise<WalletBalance> {
+  // Convert days of gas to BBG amount
+  const gasInBBG = gasRemaining * DAILY_GAS_RATE;
+  
+  const balance: WalletBalance = {
+    total: bbgBalance,
+    gas_tank: gasInBBG,  // Convert days to BBG value
+    parked: Math.max(0, bbgBalance - gasInBBG), // Rest goes to parked
+    pending: 0,
+  };
+
+  await AsyncStorage.setItem(
+    `${STORAGE_KEYS.WALLET_BALANCE}_${userId}`,
+    JSON.stringify(balance)
+  );
+
+  console.log('[WalletService] Wallet initialized:', balance);
+  return balance;
+}
+

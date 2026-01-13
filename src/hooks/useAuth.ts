@@ -14,6 +14,7 @@ import {
   register as authRegister,
   loginWithGoogle as authLoginWithGoogle,
 } from '../services/authService';
+import { initializeWallet } from '../services/walletService';
 import type { User } from '../types';
 import type {
   LoginCredentials,
@@ -142,6 +143,14 @@ export function useAuth(): UseAuthReturn {
         if (storedUser) {
           console.log('[useAuth] Found valid session for:', storedUser.email);
           setUser(storedUser);
+          
+          // Initialize wallet with user's balance data on session restore
+          await initializeWallet(
+            storedUser.id,
+            storedUser.bbg_balance ?? 0,
+            storedUser.gas_remaining ?? 0
+          );
+          console.log('[useAuth] Wallet initialized from session');
         } else {
           console.log('[useAuth] No valid session found');
           clearUser();
@@ -174,7 +183,15 @@ export function useAuth(): UseAuthReturn {
 
         if (result.success && result.user) {
           setUser(result.user);
-          console.log('[useAuth] Login successful');
+          
+          // Initialize wallet with user's balance data
+          await initializeWallet(
+            result.user.id,
+            result.user.bbg_balance ?? 0,
+            result.user.gas_remaining ?? 0
+          );
+          
+          console.log('[useAuth] Login successful, wallet initialized');
         }
 
         return result;
@@ -205,7 +222,15 @@ export function useAuth(): UseAuthReturn {
 
         if (result.success && result.user) {
           setUser(result.user);
-          console.log('[useAuth] Registration successful');
+          
+          // Initialize wallet for new user
+          await initializeWallet(
+            result.user.id,
+            result.user.bbg_balance ?? 0,
+            result.user.gas_remaining ?? 0
+          );
+          
+          console.log('[useAuth] Registration successful, wallet initialized');
         }
 
         return result;

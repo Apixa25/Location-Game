@@ -340,6 +340,7 @@ export async function login(credentials: LoginCredentials): Promise<AuthResult> 
     await storeSession(user, token);
 
     console.log('[Auth] Login successful:', user.id);
+    console.log('[Auth] User data:', { bbg_balance: user.bbg_balance, gas_remaining: user.gas_remaining, find_limit: user.find_limit });
 
     return {
       success: true,

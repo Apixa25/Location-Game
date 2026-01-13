@@ -105,6 +105,13 @@ export const useUserStore = create<UserState & UserActions>()(
        * Set user data after successful login/registration
        */
       setUser: (user: User) => {
+        console.log('[UserStore] setUser called with:', {
+          id: user.id,
+          email: user.email,
+          bbg_balance: user.bbg_balance,
+          gas_remaining: user.gas_remaining,
+          find_limit: user.find_limit,
+        });
         set({
           userId: user.id,
           email: user.email,
@@ -114,6 +121,7 @@ export const useUserStore = create<UserState & UserActions>()(
           findLimit: user.find_limit ?? 1.0,
           error: null,
         });
+        console.log('[UserStore] Store updated - bbgBalance:', user.bbg_balance ?? 0, 'gasRemaining:', user.gas_remaining ?? 0);
       },
 
       /**
