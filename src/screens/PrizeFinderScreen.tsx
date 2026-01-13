@@ -4,7 +4,7 @@
 // Reference: docs/BUILD-GUIDE.md - Sprint 2.5/2.6
 // Reference: docs/prize-finder-details.md - HUD Layout
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { View, StyleSheet, ActivityIndicator, Text, BackHandler, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ViroARSceneNavigator } from '@reactvision/react-viro';
@@ -60,6 +60,9 @@ export const PrizeFinderScreen: React.FC = () => {
   const incrementCoinsFound = useUserStore((state) => state.incrementCoinsFound);
   const currentLocation = useLocationStore((state) => state.currentLocation);
 
+  // Ref to ViroARSceneNavigator for cleanup
+  const arNavigatorRef = useRef<any>(null);
+
   const playerPosition: Coordinates = (currentLocation && currentLocation.latitude && currentLocation.longitude)
     ? currentLocation
     : { latitude: 37.7749, longitude: -122.4194 };
@@ -96,18 +99,40 @@ export const PrizeFinderScreen: React.FC = () => {
   }, [userId]);
 
   // ─────────────────────────────────────────────────────────────────────────
+  // SAFE EXIT FUNCTION - Reset AR session before navigating
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  const safeExit = useCallback(() => {
+    console.log('[PrizeFinderScreen] Safe exit - resetting AR session...');
+    try {
+      // Try to reset AR session before navigating
+      if (arNavigatorRef.current?.resetARSession) {
+        arNavigatorRef.current.resetARSession(true, true);
+        console.log('[PrizeFinderScreen] AR session reset');
+      }
+    } catch (error) {
+      console.log('[PrizeFinderScreen] Error resetting AR session:', error);
+    }
+    
+    // Small delay to let AR cleanup happen
+    setTimeout(() => {
+      navigation.goBack();
+    }, 100);
+  }, [navigation]);
+
+  // ─────────────────────────────────────────────────────────────────────────
   // ANDROID BACK BUTTON HANDLER
   // ─────────────────────────────────────────────────────────────────────────
   
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      console.log('[PrizeFinderScreen] Back button pressed - navigating back');
-      navigation.goBack();
+      console.log('[PrizeFinderScreen] Back button pressed');
+      safeExit();
       return true;
     });
 
     return () => backHandler.remove();
-  }, [navigation]);
+  }, [safeExit]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // CALLBACKS
@@ -130,8 +155,8 @@ export const PrizeFinderScreen: React.FC = () => {
 
   const handleExitFromAR = useCallback(() => {
     console.log('[PrizeFinderScreen] Exit pressed from AR scene!');
-    navigation.goBack();
-  }, [navigation]);
+    safeExit();
+  }, [safeExit]);
 
   const handleNoGasClose = useCallback(() => {
     setShowNoGasScreen(false);
@@ -174,6 +199,7 @@ export const PrizeFinderScreen: React.FC = () => {
       {/* AR SCENE */}
       {!showNoGasScreen && (
         <ViroARSceneNavigator
+          ref={arNavigatorRef}
           autofocus={true}
           initialScene={{
             scene: PrizeFinderScene as () => React.JSX.Element,
