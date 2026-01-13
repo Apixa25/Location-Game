@@ -370,10 +370,12 @@ export const CoinObject: React.FC<CoinObjectProps> = ({
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <ViroNode position={position}>
+    <ViroNode position={position} onDrag={() => {}}>
+      {/* onDrag={()=>{}} enables touch handling per Figment AR example */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* COIN 3D MODEL (using ViroBox as placeholder) */}
       {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* Using BOTH onClick AND onClickState based on Figment AR example */}
       <ViroBox
         height={scaledSize[1]}
         width={scaledSize[0]}
@@ -387,6 +389,9 @@ export const CoinObject: React.FC<CoinObjectProps> = ({
           onFinish: handleAnimationFinish,
         }}
         onClick={handleClick}
+        onClickState={(state: number) => {
+          console.log(`[CoinObject] ClickState ${state} on coin ${id}`);
+        }}
         onHover={(isHover) => (isHover ? handleHoverEnter() : handleHoverExit())}
         opacity={animationState === 'collecting' ? undefined : 1.0}
       />

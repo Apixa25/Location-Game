@@ -256,15 +256,6 @@ export const PrizeFinderScene: React.FC<PrizeFinderSceneProps> = (props) => {
     setValuePopups((prev) => prev.filter((p) => p.id !== popupId));
   }, []);
 
-  /**
-   * Handle exit button click inside AR scene
-   * Using onClick instead of onClickState based on ViroMedia test examples
-   */
-  const handleExitClick = useCallback(() => {
-    console.log('[PrizeFinderScene] EXIT PRESSED!');
-    props.sceneNavigator?.viroAppProps?.onExitPressed?.();
-  }, [props.sceneNavigator?.viroAppProps]);
-
   // ─────────────────────────────────────────────────────────────────────────
   // EFFECTS
   // ─────────────────────────────────────────────────────────────────────────
@@ -372,26 +363,6 @@ export const PrizeFinderScene: React.FC<PrizeFinderSceneProps> = (props) => {
         />
       )}
 
-      {/* ───────────────────────────────────────────────────────────────────── */}
-      {/* 3D EXIT BUTTON - INSIDE AR SCENE (tap this to exit!) */}
-      {/* Positioned in front of camera, always faces user */}
-      {/* Using onClick (not onClickState) based on ViroMedia test examples */}
-      {/* ───────────────────────────────────────────────────────────────────── */}
-      <ViroText
-        text="[ TAP HERE TO EXIT ]"
-        scale={[0.2, 0.2, 0.2]}
-        position={[0, 0.9, -1.2]}
-        style={{
-          fontFamily: 'Arial',
-          fontSize: 24,
-          fontWeight: 'bold',
-          color: '#FF4444',
-          textAlign: 'center',
-          textAlignVertical: 'center',
-        }}
-        transformBehaviors={['billboard']}
-        onClick={handleExitClick}
-      />
     </ViroARScene>
   );
 };
