@@ -1,9 +1,48 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Alert } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../hooks/useAuth';
+import { useUserStore } from '../store';
 
 export const SettingsScreen = () => {
+  const navigation = useNavigation();
+  const { user, isAuthenticated, logout } = useAuth();
+  const { bbgBalance, gasRemaining, findLimit } = useUserStore((state) => ({
+    bbgBalance: state.bbgBalance,
+    gasRemaining: state.gasRemaining,
+    findLimit: state.findLimit,
+  }));
+  
   const [hapticEnabled, setHapticEnabled] = React.useState(true);
   const [soundEnabled, setSoundEnabled] = React.useState(true);
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to log out, Captain?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Logout', 
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+            // Navigate to onboarding/login
+            // @ts-ignore
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Onboarding' }],
+            });
+          }
+        },
+      ]
+    );
+  };
+
+  const handleSignIn = () => {
+    // @ts-ignore
+    navigation.navigate('Onboarding');
+  };
 
   const SettingRow = ({
     icon,
@@ -55,13 +94,23 @@ export const SettingsScreen = () => {
         <View style={styles.profileCard}>
           <Text style={styles.avatar}>🏴‍☠️</Text>
           <View>
-            <Text style={styles.username}>Captain Guest</Text>
-            <Text style={styles.email}>Not signed in</Text>
+            <Text style={styles.username}>
+              {isAuthenticated ? `Captain ${user?.email?.split('@')[0] || 'Pirate'}` : 'Captain Guest'}
+            </Text>
+            <Text style={styles.email}>
+              {isAuthenticated ? user?.email : 'Not signed in'}
+            </Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.signInButton}>
-          <Text style={styles.signInButtonText}>Sign In / Register</Text>
-        </TouchableOpacity>
+        {isAuthenticated ? (
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutButtonText}>🚪 Logout</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={styles.signInButton} onPress={handleSignIn}>
+            <Text style={styles.signInButtonText}>Sign In / Register</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Preferences */}
@@ -89,8 +138,9 @@ export const SettingsScreen = () => {
         <Text style={styles.sectionTitle}>Your Stats</Text>
         <SettingRow icon="🪙" label="Coins Found" value="0" />
         <SettingRow icon="📍" label="Coins Hidden" value="0" />
-        <SettingRow icon="💰" label="Total Value Found" value="$0.00" />
-        <SettingRow icon="🎯" label="Find Limit" value="$1.00" />
+        <SettingRow icon="💰" label="BBG Balance" value={`$${bbgBalance.toFixed(2)}`} />
+        <SettingRow icon="⛽" label="Gas Remaining" value={`${gasRemaining} days`} />
+        <SettingRow icon="🎯" label="Find Limit" value={`$${(findLimit || 1).toFixed(2)}`} />
       </View>
 
       {/* Support */}
@@ -157,6 +207,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     color: '#1A365D',
+  },
+  logoutButton: {
+    backgroundColor: '#8B0000',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 15,
+  },
+  logoutButtonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
   settingRow: {
     flexDirection: 'row',

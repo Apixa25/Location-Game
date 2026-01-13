@@ -13,12 +13,16 @@ import {
   ActivityIndicator,
   ScrollView,
   RefreshControl,
+  Alert,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useLocationStore, useCurrentLocation, useIsTracking } from '../store/useLocationStore';
 import { useCoinStore, useNearbyCoinCount, useClosestCoin } from '../store/useCoinStore';
 import { useUserStore } from '../store/useUserStore';
 import { useLocation } from '../hooks/useLocation';
 import { colors as COLORS, spacing as SPACING } from '../theme';
+import type { RootStackParamList } from '../navigation/AppNavigator';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -34,6 +38,7 @@ interface CoinListItemProps {
     is_over_limit: boolean;
   };
   findLimit: number;
+  onPress: (coinId: string, isLocked: boolean) => void;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -62,12 +67,16 @@ const formatDistance = (meters: number): string => {
 // COIN LIST ITEM COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
 
-const CoinListItem: React.FC<CoinListItemProps> = ({ coin, findLimit }) => {
+const CoinListItem: React.FC<CoinListItemProps> = ({ coin, findLimit, onPress }) => {
   const isLocked = coin.is_over_limit || (coin.value !== null && coin.value > findLimit);
   const isPool = coin.coinType === 'pool';
   
   return (
-    <View style={[styles.coinItem, isLocked && styles.coinItemLocked]}>
+    <TouchableOpacity 
+      style={[styles.coinItem, isLocked && styles.coinItemLocked]}
+      onPress={() => onPress(coin.id, isLocked)}
+      activeOpacity={0.7}
+    >
       <View style={styles.coinIcon}>
         <Text style={styles.coinEmoji}>{isLocked ? '🔒' : '🪙'}</Text>
       </View>
@@ -90,7 +99,7 @@ const CoinListItem: React.FC<CoinListItemProps> = ({ coin, findLimit }) => {
           <Text style={styles.distantText}>Walk Closer</Text>
         )}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -174,6 +183,7 @@ const RadarView: React.FC<RadarViewProps> = ({ coins }) => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const MapScreen: React.FC = () => {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [refreshing, setRefreshing] = useState(false);
   
   // Location tracking
@@ -183,12 +193,37 @@ export const MapScreen: React.FC = () => {
   const isTracking = useIsTracking();
   
   // Coins
-  const { nearbyCoins, isLoadingCoins, setNearbyCoins } = useCoinStore();
+  const { nearbyCoins, isLoadingCoins, setNearbyCoins, selectCoin } = useCoinStore();
   const coinCount = useNearbyCoinCount();
   const closestCoin = useClosestCoin();
   
   // User
-  const { findLimit } = useUserStore();
+  const { findLimit, gasRemaining } = useUserStore();
+  
+  // Handle coin tap
+  const handleCoinPress = useCallback((coinId: string, isLocked: boolean) => {
+    if (isLocked) {
+      Alert.alert(
+        '🔒 Coin Locked',
+        'This coin is above your find limit. Keep hunting to increase your limit!',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    
+    if (gasRemaining <= 0) {
+      Alert.alert(
+        '⛽ No Gas',
+        "You're out of gas, Captain! Add more gas to start hunting.",
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    
+    // Select this coin and navigate to AR view
+    selectCoin(coinId);
+    navigation.navigate('PrizeFinder');
+  }, [selectCoin, navigation, gasRemaining]);
   
   // Simulate fetching coins (in production, would call API)
   const fetchNearbyCoins = useCallback(async () => {
@@ -352,6 +387,7 @@ export const MapScreen: React.FC = () => {
                 key={coin.id}
                 coin={coin}
                 findLimit={findLimit}
+                onPress={handleCoinPress}
               />
             ))
           )}
