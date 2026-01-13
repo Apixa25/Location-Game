@@ -5,7 +5,7 @@
 // Reference: docs/prize-finder-details.md - HUD Layout
 
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text, BackHandler, Platform } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Text, BackHandler, Platform, TouchableOpacity } from 'react-native';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { ViroARSceneNavigator } from '@reactvision/react-viro';
 import { PrizeFinderScene } from '../ar/PrizeFinderScene';
@@ -124,17 +124,25 @@ export const PrizeFinderScreen: React.FC = () => {
       return;
     }
     
-    console.log('[PrizeFinderScreen] Safe exit - navigating back...');
+    console.log('[PrizeFinderScreen] Showing exit overlay (NOT navigating yet)...');
     setIsExiting(true);
     
-    // Show exit overlay briefly, then navigate
-    // Note: ViroReact may crash on unmount (known bug with React Native 0.81)
-    // User may need to dismiss error dialog
-    exitTimeoutRef.current = setTimeout(() => {
-      console.log('[PrizeFinderScreen] Navigating back...');
-      navigation.goBack();
-    }, 500);
-  }, [navigation, isExiting]);
+    // DON'T navigate automatically - let user tap "Return to Port" button
+    // This prevents the crash from happening immediately
+  }, [isExiting]);
+
+  // Separate function for actual navigation (will cause crash)
+  const doNavigateBack = useCallback(() => {
+    console.log('[PrizeFinderScreen] User confirmed exit - resetting navigation (may crash)...');
+    // Use reset instead of goBack to fully clear navigation state
+    // This might help the app recover better after the ViroReact crash
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'Main' as never }],
+      })
+    );
+  }, [navigation]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // ANDROID BACK BUTTON HANDLER
@@ -265,13 +273,22 @@ export const PrizeFinderScreen: React.FC = () => {
       {isExiting && (
         <View style={styles.exitingOverlay}>
           <Text style={styles.exitingText}>🏴‍☠️</Text>
-          <Text style={styles.exitingSubtext}>Returning to port...</Text>
-          {coinsCollectedCount > 0 && (
+          <Text style={styles.exitingSubtext}>Hunt Complete!</Text>
+          {coinsCollectedCount > 0 ? (
             <Text style={styles.exitingStats}>
-              +${totalValueCollected.toFixed(2)} collected!
+              🪙 {coinsCollectedCount} coins | +${totalValueCollected.toFixed(2)}
             </Text>
+          ) : (
+            <Text style={styles.exitingNoCoins}>No coins collected this session</Text>
           )}
-          <Text style={styles.exitingHint}>Reloading app...</Text>
+          
+          <TouchableOpacity style={styles.returnButton} onPress={doNavigateBack}>
+            <Text style={styles.returnButtonText}>⚓ Return to Port</Text>
+          </TouchableOpacity>
+          
+          <Text style={styles.exitingWarning}>
+            ⚠️ You may see an error dialog - just tap "Dismiss"
+          </Text>
         </View>
       )}
     </View>
@@ -327,10 +344,34 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 15,
   },
-  exitingHint: {
+  exitingNoCoins: {
     color: 'rgba(255, 255, 255, 0.6)',
-    fontSize: 14,
+    fontSize: 16,
+    marginTop: 15,
+  },
+  returnButton: {
+    backgroundColor: COLORS.gold,
+    paddingHorizontal: 40,
+    paddingVertical: 16,
+    borderRadius: 30,
+    marginTop: 40,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  returnButtonText: {
+    color: COLORS.deepSea,
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  exitingWarning: {
+    color: 'rgba(255, 200, 100, 0.8)',
+    fontSize: 12,
     marginTop: 30,
+    textAlign: 'center',
+    paddingHorizontal: 40,
   },
   hudContainer: {
     position: 'absolute',
