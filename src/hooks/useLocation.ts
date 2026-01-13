@@ -151,18 +151,26 @@ export function useLocation(options: UseLocationOptions = {}): UseLocationReturn
 
   /**
    * Calculate distance to selected coin
+   * Handle both coin.location and coin.latitude/longitude formats
    */
   const distanceToSelectedCoin =
     currentLocation && selectedCoin
-      ? calculateDistance(currentLocation, selectedCoin.location)
+      ? calculateDistance(
+          currentLocation, 
+          selectedCoin.location || { latitude: (selectedCoin as any).latitude, longitude: (selectedCoin as any).longitude }
+        )
       : null;
 
   /**
    * Calculate bearing to selected coin
+   * Handle both coin.location and coin.latitude/longitude formats
    */
   const bearingToSelectedCoin =
     currentLocation && selectedCoin
-      ? calculateBearing(currentLocation, selectedCoin.location)
+      ? calculateBearing(
+          currentLocation, 
+          selectedCoin.location || { latitude: (selectedCoin as any).latitude, longitude: (selectedCoin as any).longitude }
+        )
       : null;
 
   // ─────────────────────────────────────────────────────────────────────────

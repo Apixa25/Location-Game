@@ -284,9 +284,14 @@ export function stopAllWatching(): void {
  * ```
  */
 export function calculateDistance(
-  point1: Coordinates,
-  point2: Coordinates
+  point1: Coordinates | null | undefined,
+  point2: Coordinates | null | undefined
 ): number {
+  // Safety check for null/undefined coordinates
+  if (!point1?.latitude || !point1?.longitude || !point2?.latitude || !point2?.longitude) {
+    return 0;
+  }
+  
   const lat1Rad = toRadians(point1.latitude);
   const lat2Rad = toRadians(point2.latitude);
   const dLatRad = toRadians(point2.latitude - point1.latitude);
@@ -320,7 +325,15 @@ export function calculateDistance(
  * // Output: "Coin is at 45° from North" (northeast)
  * ```
  */
-export function calculateBearing(from: Coordinates, to: Coordinates): number {
+export function calculateBearing(
+  from: Coordinates | null | undefined,
+  to: Coordinates | null | undefined
+): number {
+  // Safety check for null/undefined coordinates
+  if (!from?.latitude || !from?.longitude || !to?.latitude || !to?.longitude) {
+    return 0;
+  }
+  
   const fromLatRad = toRadians(from.latitude);
   const toLatRad = toRadians(to.latitude);
   const dLngRad = toRadians(to.longitude - from.longitude);

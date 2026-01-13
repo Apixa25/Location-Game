@@ -234,6 +234,8 @@ export const MapScreen: React.FC = () => {
     // const coins = await api.get(`/coins/nearby?lat=${currentLocation.latitude}&lng=${currentLocation.longitude}`);
     
     // For now, generate mock coins based on location
+    // NOTE: Using simplified structure with latitude/longitude directly on coin for display
+    // The full ARCoin interface uses location: { latitude, longitude } - this is just for mock data
     const mockCoins = [
       {
         id: '1',
@@ -241,6 +243,7 @@ export const MapScreen: React.FC = () => {
         coinType: 'fixed' as const,
         latitude: currentLocation.latitude + 0.0003,
         longitude: currentLocation.longitude + 0.0002,
+        location: { latitude: currentLocation.latitude + 0.0003, longitude: currentLocation.longitude + 0.0002 },
         distance_meters: 38,
         bearing: 33,
         is_over_limit: false,
@@ -253,6 +256,7 @@ export const MapScreen: React.FC = () => {
         coinType: 'fixed' as const,
         latitude: currentLocation.latitude + 0.002,
         longitude: currentLocation.longitude - 0.001,
+        location: { latitude: currentLocation.latitude + 0.002, longitude: currentLocation.longitude - 0.001 },
         distance_meters: 239,
         bearing: 120,
         is_over_limit: false,
@@ -265,6 +269,7 @@ export const MapScreen: React.FC = () => {
         coinType: 'pool' as const,
         latitude: currentLocation.latitude - 0.003,
         longitude: currentLocation.longitude - 0.002,
+        location: { latitude: currentLocation.latitude - 0.003, longitude: currentLocation.longitude - 0.002 },
         distance_meters: 377,
         bearing: 210,
         is_over_limit: false,
@@ -277,6 +282,7 @@ export const MapScreen: React.FC = () => {
         coinType: 'fixed' as const,
         latitude: currentLocation.latitude + 0.001,
         longitude: currentLocation.longitude - 0.0005,
+        location: { latitude: currentLocation.latitude + 0.001, longitude: currentLocation.longitude - 0.0005 },
         distance_meters: 120,
         bearing: 290,
         is_over_limit: true,
@@ -289,6 +295,7 @@ export const MapScreen: React.FC = () => {
         coinType: 'fixed' as const,
         latitude: currentLocation.latitude + 0.005,
         longitude: currentLocation.longitude + 0.004,
+        location: { latitude: currentLocation.latitude + 0.005, longitude: currentLocation.longitude + 0.004 },
         distance_meters: 658,
         bearing: 45,
         is_over_limit: false,
