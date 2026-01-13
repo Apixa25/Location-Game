@@ -51,9 +51,6 @@ export const PrizeFinderScreen: React.FC = () => {
   const [trackingState, setTrackingState] = useState<ARTrackingState>('NORMAL');
   const [coinsCollectedCount, setCoinsCollectedCount] = useState(0);
   const [totalValueCollected, setTotalValueCollected] = useState(0);
-  
-  // NEW: Control whether AR is actively rendered
-  const [isARMounted, setIsARMounted] = useState(true);
   const [isExiting, setIsExiting] = useState(false);
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -127,25 +124,16 @@ export const PrizeFinderScreen: React.FC = () => {
       return;
     }
     
-    console.log('[PrizeFinderScreen] Safe exit - Step 1: Unmount AR component...');
+    console.log('[PrizeFinderScreen] Safe exit - navigating back...');
     setIsExiting(true);
     
-    // Step 1: Unmount the ViroARSceneNavigator first
-    setIsARMounted(false);
-    
-    // Step 2: Wait for AR to fully unmount, then navigate
+    // Show exit overlay briefly, then navigate
+    // Note: ViroReact may crash on unmount (known bug with React Native 0.81)
+    // User may need to dismiss error dialog
     exitTimeoutRef.current = setTimeout(() => {
-      console.log('[PrizeFinderScreen] Step 2: Navigating away...');
-      
-      // Use navigation.reset() to fully reset the navigation stack
-      // This prevents the frozen state after AR crashes
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: 'Main' as never }],
-        })
-      );
-    }, 500); // Give AR 500ms to fully unmount
+      console.log('[PrizeFinderScreen] Navigating back...');
+      navigation.goBack();
+    }, 500);
   }, [navigation, isExiting]);
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -222,25 +210,10 @@ export const PrizeFinderScreen: React.FC = () => {
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────
 
-  // Show exit screen while unmounting AR
-  if (isExiting) {
-    return (
-      <View style={styles.exitingContainer}>
-        <Text style={styles.exitingText}>🏴‍☠️</Text>
-        <Text style={styles.exitingSubtext}>Returning to port...</Text>
-        {coinsCollectedCount > 0 && (
-          <Text style={styles.exitingStats}>
-            +${totalValueCollected.toFixed(2)} collected!
-          </Text>
-        )}
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      {/* AR SCENE - Only render when isARMounted is true */}
-      {!showNoGasScreen && isARMounted && (
+      {/* AR SCENE - Keep it mounted even during exit to prevent crash */}
+      {!showNoGasScreen && (
         <ViroARSceneNavigator
           ref={arNavigatorRef}
           autofocus={true}
@@ -287,6 +260,20 @@ export const PrizeFinderScreen: React.FC = () => {
           parkedAmount={parkedAmount}
         />
       )}
+
+      {/* EXIT OVERLAY - Shows on top of AR without unmounting it */}
+      {isExiting && (
+        <View style={styles.exitingOverlay}>
+          <Text style={styles.exitingText}>🏴‍☠️</Text>
+          <Text style={styles.exitingSubtext}>Returning to port...</Text>
+          {coinsCollectedCount > 0 && (
+            <Text style={styles.exitingStats}>
+              +${totalValueCollected.toFixed(2)} collected!
+            </Text>
+          )}
+          <Text style={styles.exitingHint}>Reloading app...</Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -315,11 +302,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  exitingContainer: {
-    flex: 1,
+  exitingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.deepSea,
+    backgroundColor: COLORS.deepSea, // Fully opaque to hide AR
   },
   exitingText: {
     fontSize: 64,
@@ -335,6 +326,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginTop: 15,
+  },
+  exitingHint: {
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 14,
+    marginTop: 30,
   },
   hudContainer: {
     position: 'absolute',
