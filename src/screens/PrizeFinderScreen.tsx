@@ -50,7 +50,9 @@ export const PrizeFinderScreen: React.FC = () => {
   // ─────────────────────────────────────────────────────────────────────────
 
   // Tracking state from AR scene
-  const [trackingState, setTrackingState] = useState<ARTrackingState>('UNAVAILABLE');
+  // Start with 'NORMAL' since if camera loads, AR is working
+  // ViroReact's onTrackingUpdated may not fire reliably on all devices
+  const [trackingState, setTrackingState] = useState<ARTrackingState>('NORMAL');
 
   // Currently hovered coin (for crosshairs)
   const [hoveredCoinId, setHoveredCoinId] = useState<string | null>(null);

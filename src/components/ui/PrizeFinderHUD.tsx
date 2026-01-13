@@ -258,9 +258,9 @@ export const PrizeFinderHUD: React.FC<PrizeFinderHUDProps> = ({
       )}
 
       {trackingState === 'UNAVAILABLE' && (
-        <View style={[styles.warningBanner, styles.errorBanner]}>
+        <View style={styles.warningBanner}>
           <Text style={styles.warningText}>
-            ❌ AR unavailable - check camera permissions
+            🔄 Initializing AR... move phone slowly to calibrate
           </Text>
         </View>
       )}
