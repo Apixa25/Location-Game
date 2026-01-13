@@ -5,7 +5,7 @@
 // Reference: docs/prize-finder-details.md - HUD Layout
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Text, TouchableOpacity, BackHandler } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ViroARSceneNavigator } from '@reactvision/react-viro';
 import { PrizeFinderScene } from '../ar/PrizeFinderScene';
@@ -120,6 +120,20 @@ export const PrizeFinderScreen: React.FC = () => {
 
     checkGas();
   }, [userId]);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // ANDROID BACK BUTTON HANDLER
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      console.log('[PrizeFinderScreen] Back button pressed');
+      navigation.goBack();
+      return true; // Prevent default behavior
+    });
+
+    return () => backHandler.remove();
+  }, [navigation]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // CALLBACKS
@@ -307,18 +321,8 @@ export const PrizeFinderScreen: React.FC = () => {
         />
       )}
 
-      {/* ───────────────────────────────────────────────────────────────────── */}
-      {/* FLOATING CLOSE BUTTON - Always on top to ensure it works */}
-      {/* ───────────────────────────────────────────────────────────────────── */}
-      {!showNoGasScreen && (
-        <TouchableOpacity
-          style={styles.floatingCloseButton}
-          onPress={handleClose}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.floatingCloseText}>✕</Text>
-        </TouchableOpacity>
-      )}
+      {/* NOTE: ViroReact consumes all touch events, so overlay buttons don't work.
+          Use Android back button (hardware or gesture) to exit AR mode. */}
     </View>
   );
 };

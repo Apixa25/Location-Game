@@ -4,7 +4,5 @@ export { PrizeFinderScreen } from './PrizeFinderScreen';
 export { MapScreen } from './MapScreen';
 export { WalletScreen } from './WalletScreen';
 export { SettingsScreen } from './SettingsScreen';
-export { HideCoinScreen } from './HideCoinScreen';
-
-// Auth screens
+export { HideCoinScreen } from './HideCoinScreen';// Auth screens
 export { OnboardingScreen, LoginScreen, RegisterScreen } from './auth';

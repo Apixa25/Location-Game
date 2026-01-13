@@ -177,16 +177,11 @@ export const PrizeFinderHUD: React.FC<PrizeFinderHUDProps> = ({
       {/* ───────────────────────────────────────────────────────────────────── */}
       {/* TOP BAR */}
       {/* ───────────────────────────────────────────────────────────────────── */}
-      <View style={styles.topBar}>
-        {/* Close Button */}
-        <TouchableOpacity 
-          style={styles.closeButton} 
-          onPress={onClose}
-          activeOpacity={0.7}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Text style={styles.closeButtonText}>✕</Text>
-        </TouchableOpacity>
+      <View style={styles.topBar} pointerEvents="none">
+        {/* Close Button - Hidden since ViroReact blocks touches. Use Android back button instead. */}
+        <View style={styles.backHint}>
+          <Text style={styles.backHintText}>← Back to exit</Text>
+        </View>
 
         {/* Session Stats (center) - only show if coins collected */}
         {showSessionStats && (
@@ -294,20 +289,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingTop: 10,
   },
-  closeButton: {
-    width: 44,
-    height: 44,
+  backHint: {
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
   },
-  closeButtonText: {
-    fontSize: 22,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
+  backHintText: {
+    fontSize: 12,
+    color: '#FFD700',
+    fontWeight: '600',
   },
   sessionStats: {
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
