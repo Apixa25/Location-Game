@@ -14,9 +14,9 @@ class MainActivity : ReactActivity() {
 
   /**
    * Returns the instance of the [ReactActivityDelegate]. We use [DefaultReactActivityDelegate]
-   * with Fabric explicitly DISABLED to avoid ViroReact crash on AR scene unmount.
-   * ViroReact has compatibility issues with React Native's Fabric architecture.
+   * with Fabric DISABLED because other libraries (react-native-screens, safe-area-context)
+   * don't fully support Fabric yet. ViroReact cleanup crash is handled in JS instead.
    */
   override fun createReactActivityDelegate(): ReactActivityDelegate =
-      DefaultReactActivityDelegate(this, mainComponentName, false) // Explicitly disable Fabric
+      DefaultReactActivityDelegate(this, mainComponentName, false) // Keep Legacy for library compatibility
 }

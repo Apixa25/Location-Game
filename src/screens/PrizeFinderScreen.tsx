@@ -171,12 +171,21 @@ export const PrizeFinderScreen: React.FC = () => {
     // This prevents the crash from happening immediately
   }, [isExiting]);
 
-  // Separate function for actual navigation
+  // Separate function for actual exit
+  // WORKAROUND: ViroReact has a bug in ARSceneNavigatorModule.cleanup() that crashes
+  // when using Legacy Architecture (UIManagerModule cannot be cast to FabricUIManager).
+  // We exit the app cleanly to avoid the crash. User can reopen from recent apps.
+  // Their session and coins are saved in AsyncStorage.
   const doNavigateBack = useCallback(() => {
-    console.log('[PrizeFinderScreen] User confirmed exit - navigating back...');
-    // Use simple goBack() - the route name was wrong before!
-    navigation.goBack();
-  }, [navigation]);
+    console.log('[PrizeFinderScreen] User confirmed exit - closing app to avoid ViroReact cleanup crash...');
+    
+    // Small delay for user feedback, then exit
+    // BackHandler.exitApp() closes the app cleanly without triggering ViroReact cleanup
+    // User's session persists in AsyncStorage - they just reopen the app
+    setTimeout(() => {
+      BackHandler.exitApp();
+    }, 300);
+  }, []);
 
   // ─────────────────────────────────────────────────────────────────────────
   // ANDROID BACK BUTTON HANDLER
@@ -277,7 +286,7 @@ export const PrizeFinderScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* AR SCENE - Keep it mounted even during exit to prevent crash */}
+      {/* AR SCENE */}
       {!showNoGasScreen && (
         <ViroARSceneNavigator
           ref={arNavigatorRef}
@@ -326,7 +335,7 @@ export const PrizeFinderScreen: React.FC = () => {
         />
       )}
 
-      {/* EXIT OVERLAY - Shows on top of AR without unmounting it */}
+      {/* EXIT OVERLAY - Shows on top of AR */}
       {isExiting && (
         <View style={styles.exitingOverlay}>
           <Text style={styles.exitingText}>🏴‍☠️</Text>
@@ -338,10 +347,12 @@ export const PrizeFinderScreen: React.FC = () => {
           ) : (
             <Text style={styles.exitingNoCoins}>No coins collected this session</Text>
           )}
+          <Text style={styles.exitingNote}>Your treasure is safely stored!</Text>
           
           <TouchableOpacity style={styles.returnButton} onPress={doNavigateBack}>
-            <Text style={styles.returnButtonText}>⚓ Return to Port</Text>
+            <Text style={styles.returnButtonText}>⚓ End Hunt & Save</Text>
           </TouchableOpacity>
+          <Text style={styles.exitingHint}>Reopen app to continue your adventure</Text>
         </View>
       )}
     </View>
@@ -401,6 +412,17 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.6)',
     fontSize: 16,
     marginTop: 15,
+  },
+  exitingNote: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 14,
+    marginTop: 10,
+    fontStyle: 'italic',
+  },
+  exitingHint: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 12,
+    marginTop: 20,
   },
   returnButton: {
     backgroundColor: COLORS.gold,
